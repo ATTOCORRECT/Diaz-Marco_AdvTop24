@@ -19,12 +19,10 @@ public class Chunk : MonoBehaviour
             Vector3Int point_position = GridPosition(i, chunk_grid_size);
 
             float density = GetDensity(point_position);
+
             Debug.Log(density);
             Color color = Color.Lerp(Color.black, Color.white, density);
-            if (density > 0.5)
-            {
-                DrawPoint(point_position, color);
-            }
+            if (density > 0) DrawPoint(point_position, Color.red);
         }
     }
 
@@ -58,14 +56,25 @@ public class Chunk : MonoBehaviour
 
     float GetDensity(Vector3Int position)
     {
-        return Mathf.Clamp01(PerlinNoise3D(position, 0.1f));
+        return Mathf.Clamp(Noise(position, 0.1f, 1), -1, 1);
     }
 
-    public static float PerlinNoise3D(Vector3 position, float scale)
+    float Noise(Vector3 position, float scale, int octaves)
+    {
+        position *= scale;
+
+        float noise = 0;
+        for (int i = 0; i < octaves; i++)
+        {
+            noise += PerlinNoise3D(position * Mathf.Pow(2, i)) / Mathf.Pow(2, i);
+        }
+
+        return noise;
+    }
+
+    public static float PerlinNoise3D(Vector3 position)
     { 
         // https://discussions.unity.com/t/3d-perlin-noise/134957
-
-        position *= scale;
 
         float x = position.x;
         float y = position.y;
@@ -80,7 +89,7 @@ public class Chunk : MonoBehaviour
         float zx = perlin3DFixed(z, x);
         float zy = perlin3DFixed(z, y);
 
-        return xy * xz * yz * yx * zx * zy;
+        return (((xy * xz * yz * yx * zx * zy) * 2) - 1);
     }
 
     static float perlin3DFixed(float a, float b)
