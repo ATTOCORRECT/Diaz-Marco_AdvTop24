@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 
 public class Chunk : MonoBehaviour
 {
-    Vector3Int chunk_grid_size = new Vector3Int(8, 8, 8); // dimensions of a chunk in meters
+    Vector3Int chunk_grid_size = new Vector3Int(16, 16, 16); // dimensions of a chunk in meters
     int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
     Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
@@ -374,7 +374,7 @@ public class Chunk : MonoBehaviour
         {
             Vector3Int point_position = GridPosition(i, chunk_grid_size);
 
-            Color color = Color.HSVToRGB(triangulation_indicies[i] / 255f, 1, 1);
+            //Color color = Color.HSVToRGB(triangulation_indicies[i] / 255f, 1, 1);
             
             //if (triangulation_indicies[i] != 0) DrawUnitCube(point_position, 0.9f, color);
 
@@ -459,10 +459,14 @@ public class Chunk : MonoBehaviour
 
     float GetDensity(Vector3Int position)
     {
-        return Mathf.Clamp(Noise(position, 0.1f, 1), -1, 1);
+        float density = 0;
+        density += Noise3D(position, 0.1f, 1);
+        if (position.y < 1) density += 1;
+        density -= position.y / 16f;
+        return density;
     }
 
-    float Noise(Vector3 position, float scale, int octaves)
+    float Noise3D(Vector3 position, float scale, int octaves)
     {
         position *= scale;
 
@@ -472,7 +476,7 @@ public class Chunk : MonoBehaviour
             noise += PerlinNoise3D(position * Mathf.Pow(2, i)) / Mathf.Pow(2, i);
         }
 
-        return noise;
+        return Mathf.Clamp(noise, -1, 1);
     }
 
     public static float PerlinNoise3D(Vector3 position)
