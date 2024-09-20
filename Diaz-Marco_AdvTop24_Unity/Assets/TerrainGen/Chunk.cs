@@ -1,12 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 public class Chunk : MonoBehaviour
 {
-    Vector3Int chunk_grid_size = new Vector3Int(16, 16, 16); // dimensions of a chunk in meters
+    Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
     int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
     Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
@@ -277,7 +278,7 @@ public class Chunk : MonoBehaviour
     new int[]{ 0, 9, 1, -1 },
     new int[]{ 0, 3, 8, -1 },
     new int[]{-1}
-    };
+    }; // surely theres a better way to do this
 
     readonly int[][] EDGE_TABLE = {
     new int[]{ 0, 1},
@@ -378,9 +379,9 @@ public class Chunk : MonoBehaviour
             
             //if (triangulation_indicies[i] != 0) DrawUnitCube(point_position, 0.9f, color);
 
-/*            int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
-            color = gradient.Evaluate((densities[chunk_lattice_index] + 1) / 2f);
-            if (densities[chunk_lattice_index] > 0) DrawUnitCube(point_position, .5f, Color.magenta);*/
+            //int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
+            //Color color = gradient.Evaluate((densities[chunk_lattice_index] + 1) / 2f);
+            //if (densities[chunk_lattice_index] > 0) DrawUnitCube(point_position, .5f, color);
         }
     }
 
@@ -396,7 +397,7 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    void append_triangle(Vector3 v1, Vector3 v2, Vector3 v3)
+    void append_triangle(Vector3 v1, Vector3 v2, Vector3 v3) //change for acutal mesh
     {
         Debug.DrawLine(v1, v2, Color.white, float.PositiveInfinity);
         Debug.DrawLine(v2, v3, Color.white, float.PositiveInfinity);
@@ -425,14 +426,14 @@ public class Chunk : MonoBehaviour
         grid_volume = grid_size.x * grid_size.y * grid_size.z;
     }
 
-    void DrawPoint(Vector3 position, Color color)
+    void DrawPoint(Vector3 position, Color color) // draw a point at a position
     {
         Debug.DrawRay(position - Vector3.right   / 10, Vector3.right   / 5, color);
         Debug.DrawRay(position - Vector3.up      / 10, Vector3.up      / 5, color);
         Debug.DrawRay(position - Vector3.forward / 10, Vector3.forward / 5, color);
     }
 
-    void DrawUnitCube(Vector3 position, float scale, Color color)
+    void DrawUnitCube(Vector3 position, float scale, Color color) // draw a 1x1 cube, scale makes it bigger and smaller from is center
     {
         DrawCube(position + Vector3.one * ((1 - scale) / 2f), Vector3.one - Vector3.one * (1 - scale), color);
     }
@@ -460,16 +461,45 @@ public class Chunk : MonoBehaviour
     float GetDensity(Vector3Int position)
     {
         float density = 0;
-        density += Noise3D(position, 0.1f, 1);
-        if (position.y < 1) density += 1;
-        density -= position.y / 16f;
+        density += Noise3D(position, 80, 4);
+        density += SurfaceNoise(position, 16, 40, 4);
+        //if (position.y < 1) density += 1;
+        //density -= position.y / 16f;
         return density;
+    }
+
+    float SurfaceNoise(Vector3 position, float max_height, float scale, int octaves)
+    {
+        float noise = Noise2D(new Vector2(position.x, position.z), scale, octaves);
+
+        float surfaceHeight = Mathf.Lerp(0, max_height, (noise + 1) / 2f);
+ 
+        return (surfaceHeight - position.y) / ((max_height / 2f) * 10);
+    }
+
+    float Noise2D(Vector2 position, float scale, int octaves)
+    {
+        position *= 1 / scale;
+
+        float noise = 0;
+        for (int i = 0; i < octaves; i++)
+        {
+            noise += PerlinNoise2D(position * Mathf.Pow(2, i)) / Mathf.Pow(2, i);
+        }
+
+        return Mathf.Clamp(noise, -1, 1);
+    }
+
+    float PerlinNoise2D(Vector2 position)
+    {
+        return Mathf.PerlinNoise(position.x, position.y) * 2 - 1;
     }
 
     float Noise3D(Vector3 position, float scale, int octaves)
     {
-        position *= scale;
 
+        position *= 1 / scale;
+        
         float noise = 0;
         for (int i = 0; i < octaves; i++)
         {
@@ -496,7 +526,7 @@ public class Chunk : MonoBehaviour
         float zx = perlin3DFixed(z, x);
         float zy = perlin3DFixed(z, y);
 
-        return (((xy * xz * yz * yx * zx * zy) * 2) - 1);
+        return ((xy * xz * yz * yx * zx * zy) * 2 - 1);
     }
 
     static float perlin3DFixed(float a, float b)
