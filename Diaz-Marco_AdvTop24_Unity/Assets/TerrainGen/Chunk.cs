@@ -7,6 +7,9 @@ using UnityEngine.UIElements;
 
 public class Chunk : MonoBehaviour
 {
+    public Gradient gradient;
+
+    // Chunk Variables
     Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
     int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
@@ -16,11 +19,21 @@ public class Chunk : MonoBehaviour
     List<List<ArrayList>> cells = new List<List<ArrayList>>();
 
     float[] densities;
+    // -----
 
-    int[] triangulation_indicies;
+    // Mesh Variables
+    Mesh mesh;
 
-    public Gradient gradient;
+    List<Vector3> vertices = new List<Vector3>();
 
+    List<Vector3> normals = new List<Vector3>();
+
+    List<int> triangles = new List<int>();
+
+    public Material mesh_material;
+    // ------
+
+    // Tables
     readonly int[][] TRIANGULATION_TABLE = {
     new int[]{-1},
     new int[]{ 0, 8, 3, -1 },
@@ -294,27 +307,96 @@ public class Chunk : MonoBehaviour
     new int[]{ 2, 6},
     new int[]{ 3, 7}
     };
-
+    // ------
     void Start()
     {
+        mesh = new Mesh();
+
         chunk_lattice_size = chunk_grid_size + Vector3Int.one;
 
         GetGridParts(chunk_lattice_size, out chunk_lattice_row, out chunk_lattice_slice, out chunk_lattice_volume);
         GetGridParts(chunk_grid_size   , out chunk_grid_row   , out chunk_grid_slice   , out chunk_grid_volume   );
 
-        densities = new float[chunk_lattice_volume];
+        GenerateDensities();
 
+        GenerateCellData();
+
+        GenerateMesh();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        for (int i = 0; i < chunk_grid_volume; i++)
+        {
+            Vector3Int point_position = GridPosition(i, chunk_grid_size);
+
+            //int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
+            //Color color = gradient.Evaluate((densities[chunk_lattice_index] + 1) / 2f);
+            //if (densities[chunk_lattice_index] > 0) DrawUnitCube(point_position, .5f, color);
+        }
+
+        DrawCube(Vector3.zero, Vector3.one * 32, Color.white);
+    }
+
+    void GenerateMesh()
+    {
+
+
+        for (int i = 0; i < chunk_grid_volume; i++)
+        {
+            // get triangulation index for this cell
+            int triangulation_index = 0;
+            for (int j = 0; j < 8; j++)
+            {
+                float cell_vertex_density = (float)cells[i][j][1];
+                if (cell_vertex_density > 0) triangulation_index |= 1 << j;
+            }
+
+            // generate triangulation for this cell
+            List<Vector3> triangle_vertices = new List<Vector3>();
+            int[] triangulation = TRIANGULATION_TABLE[triangulation_index];
+            for (int j = 0; j < triangulation.Length - 1; j++)
+            {
+                int edge_index = triangulation[j];
+
+                int vertex_index_A = EDGE_TABLE[edge_index][0];
+                int vertex_index_B = EDGE_TABLE[edge_index][1];
+
+                ArrayList vertex_data_A = cells[i][vertex_index_A];
+                ArrayList vertex_data_B = cells[i][vertex_index_B];
+
+                float bias = (0 - (float)vertex_data_A[1]) / ((float)vertex_data_B[1] - (float)vertex_data_A[1]);
+
+                triangle_vertices.Add(Vector3.Lerp((Vector3Int)cells[i][vertex_index_A][0], (Vector3Int)cells[i][vertex_index_B][0], bias));
+            }
+            AppendTriangles(triangle_vertices);
+        }
+
+        mesh.vertices = vertices.ToArray();
+        mesh.triangles = triangles.ToArray();
+        mesh.normals = normals.ToArray();
+
+        var mesh_filter = gameObject.AddComponent<MeshFilter>();
+        var mesh_renderer = gameObject.AddComponent<MeshRenderer>();
+
+        mesh_filter.sharedMesh = mesh;
+        mesh_renderer.material = mesh_material;
+    }
+
+    void GenerateDensities()
+    {
+        densities = new float[chunk_lattice_volume];
         for (int i = 0; i < chunk_lattice_volume; i++)
         {
             Vector3Int point_position = GridPosition(i, chunk_lattice_size);
 
             densities[i] = GetDensity(point_position);
-
-            //Debug.Log(density);
-            //Color color = gradient.Evaluate((density + 1) / 2f);
-            //if (density > 0) DrawPoint(point_position, color);
         }
+    }
 
+    void GenerateCellData()
+    {
         for (int i = 0; i < chunk_grid_volume; i++)
         {
             Vector3Int point_position = GridPosition(i, chunk_grid_size);
@@ -334,74 +416,39 @@ public class Chunk : MonoBehaviour
 
             cells.Add(cell_vertex_data);
         }
+    }
 
-        triangulation_indicies = new int[chunk_grid_volume];
-        for (int i = 0; i < chunk_grid_volume; i++)
+    void AppendTriangles(List<Vector3> triangle_vertices)
+    {
+        for (int i = 0; i < triangle_vertices.Count / 3; i++)
         {
-            triangulation_indicies[i] = 0;
-            for (int j = 0; j < 8; j++)
-            {
-                float cell_vertex_density = (float)cells[i][j][1];
-                if (cell_vertex_density > 0) triangulation_indicies[i] |= 1 << j;
-            }
-        }
+            Vector3 v1 = triangle_vertices[i * 3    ];
+            Vector3 v3 = triangle_vertices[i * 3 + 1];
+            Vector3 v2 = triangle_vertices[i * 3 + 2];
 
-        for (int i = 0; i < chunk_grid_volume; i++)
-        {
-            List<Vector3> triangle_verticies = new List<Vector3>();
-            int[] triangulation = TRIANGULATION_TABLE[triangulation_indicies[i]];
-            for (int j = 0; j < triangulation.Length - 1; j++)
-            {
-                int edge_index = triangulation[j];
-
-                int vertex_index_A = EDGE_TABLE[edge_index][0];
-                int vertex_index_B = EDGE_TABLE[edge_index][1];
-
-                ArrayList vertex_data_A = cells[i][vertex_index_A];
-                ArrayList vertex_data_B = cells[i][vertex_index_B];
-
-                float bias = (0 - (float)vertex_data_A[1]) / ((float)vertex_data_B[1] - (float)vertex_data_A[1]);
-
-                triangle_verticies.Add(Vector3.Lerp((Vector3Int)cells[i][vertex_index_A][0], (Vector3Int)cells[i][vertex_index_B][0], bias));
-            }
-            append_triangles(triangle_verticies);
+            AppendTriangle(v1, v2, v3);
         }
     }
 
-    // Update is called once per frame
-    void Update()
+    void AppendTriangle(Vector3 v1, Vector3 v2, Vector3 v3) //change for acutal mesh
     {
-        for (int i = 0; i < chunk_grid_volume; i++)
-        {
-            Vector3Int point_position = GridPosition(i, chunk_grid_size);
+        vertices.Add(v1);
+        vertices.Add(v2);
+        vertices.Add(v3);
 
-            //Color color = Color.HSVToRGB(triangulation_indicies[i] / 255f, 1, 1);
-            
-            //if (triangulation_indicies[i] != 0) DrawUnitCube(point_position, 0.9f, color);
+        triangles.Add(triangles.Count);
+        triangles.Add(triangles.Count);
+        triangles.Add(triangles.Count);
 
-            //int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
-            //Color color = gradient.Evaluate((densities[chunk_lattice_index] + 1) / 2f);
-            //if (densities[chunk_lattice_index] > 0) DrawUnitCube(point_position, .5f, color);
-        }
-    }
+        Vector3 normal = Vector3.Cross(v2 - v1, v3 - v1).normalized;
 
-    void append_triangles(List<Vector3> triangle_verticies)
-    {
-        for (int i = 0; i < triangle_verticies.Count / 3; i++)
-        {
-            Vector3 v1 = triangle_verticies[i * 3];
-            Vector3 v3 = triangle_verticies[i * 3 + 1];
-            Vector3 v2 = triangle_verticies[i * 3 + 2];
+        normals.Add(normal);
+        normals.Add(normal);
+        normals.Add(normal);
 
-            append_triangle(v1, v2, v3);
-        }
-    }
-
-    void append_triangle(Vector3 v1, Vector3 v2, Vector3 v3) //change for acutal mesh
-    {
-        Debug.DrawLine(v1, v2, Color.white, float.PositiveInfinity);
-        Debug.DrawLine(v2, v3, Color.white, float.PositiveInfinity);
-        Debug.DrawLine(v3, v1, Color.white, float.PositiveInfinity);
+        //Debug.DrawLine(v1, v2, Color.white, float.PositiveInfinity);
+        //Debug.DrawLine(v2, v3, Color.white, float.PositiveInfinity);
+        //Debug.DrawLine(v3, v1, Color.white, float.PositiveInfinity);
     }
 
     void BreakVector3IntIntoComponents(Vector3Int v, out int x, out int y, out int z)
@@ -461,12 +508,14 @@ public class Chunk : MonoBehaviour
     float GetDensity(Vector3Int position)
     {
         float density = 0;
-        density += Noise3D(position, 80, 4);
+        density += Noise3D(position, 40, 2);
         density += SurfaceNoise(position, 16, 40, 4);
         //if (position.y < 1) density += 1;
         //density -= position.y / 16f;
         return density;
     }
+
+
 
     float SurfaceNoise(Vector3 position, float max_height, float scale, int octaves)
     {
@@ -474,7 +523,7 @@ public class Chunk : MonoBehaviour
 
         float surfaceHeight = Mathf.Lerp(0, max_height, (noise + 1) / 2f);
  
-        return (surfaceHeight - position.y) / ((max_height / 2f) * 10);
+        return (surfaceHeight - position.y) / ((max_height / 2f) * 1 / 0.5f);
     }
 
     float Noise2D(Vector2 position, float scale, int octaves)
