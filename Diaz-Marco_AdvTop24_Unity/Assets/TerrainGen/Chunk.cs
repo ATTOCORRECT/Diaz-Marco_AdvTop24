@@ -496,9 +496,9 @@ public class Chunk : MonoBehaviour
     private float GetDensity(Vector3Int position)
     {
         float density = 0;
-        density += Noise3D(position, 40, 2) / 2;
+        density += Noise3D(position, 40, 2) / 8;
         //density += SurfaceNoise(position, 16, 40, 4);
-        density += SphereSurfaceNoise(position, 6, 14, 4, 4);
+        density += SphereSurfaceNoise(position, 8, 28, 4, 4);
         //if (position.y < 1) density += 1;
         //density -= position.y / 16f;
         return density;
@@ -506,7 +506,7 @@ public class Chunk : MonoBehaviour
 
     private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves)
     {
-        Vector3 sphere_position = chunk_grid_size/2 + transform.localPosition;
+        Vector3 sphere_position = chunk_grid_size;
 
         float noise = Noise3D((position - sphere_position).normalized + sphere_position, noise_scale, octaves);
         float t = (noise + 1) / 2f;
