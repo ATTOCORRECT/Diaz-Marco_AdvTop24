@@ -5,9 +5,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 
+[ExecuteInEditMode]
 public class Chunk : MonoBehaviour
 {
-    public Gradient gradient;
+    public bool reload;
+
+    public AnimationCurve height_map;
 
     // Chunk Variables
     Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
@@ -16,22 +19,10 @@ public class Chunk : MonoBehaviour
     Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
     int chunk_grid_row, chunk_grid_slice, chunk_grid_volume;
 
-    List<List<ArrayList>> cells = new List<List<ArrayList>>();
+    List<List<ArrayList>> cells;
 
     float[] densities;
     // -----
-
-    // Mesh Variables
-    Mesh mesh;
-
-    List<Vector3> vertices = new List<Vector3>();
-
-    List<Vector3> normals = new List<Vector3>();
-
-    List<int> triangles = new List<int>();
-
-    public Material mesh_material;
-    // ------
 
     // Tables
     readonly int[][] TRIANGULATION_TABLE = {
@@ -308,15 +299,30 @@ public class Chunk : MonoBehaviour
     new int[]{ 3, 7}
     };
     // ------
-    void Start()
+    void Awake()
     {
-        mesh = new Mesh();
-
         chunk_lattice_size = chunk_grid_size + Vector3Int.one;
 
         GetGridParts(chunk_lattice_size, out chunk_lattice_row, out chunk_lattice_slice, out chunk_lattice_volume);
         GetGridParts(chunk_grid_size   , out chunk_grid_row   , out chunk_grid_slice   , out chunk_grid_volume   );
 
+        GenerateChunk();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (reload)
+        {
+            //reload = false;
+            GenerateChunk();
+        }
+
+        DrawCube(transform.position, chunk_grid_size, Color.white);
+    }
+
+    public void GenerateChunk()
+    {
         GenerateDensities();
 
         GenerateCellData();
@@ -324,24 +330,13 @@ public class Chunk : MonoBehaviour
         GenerateMesh();
     }
 
-    // Update is called once per frame
-    void Update()
+    private void GenerateMesh()
     {
-        for (int i = 0; i < chunk_grid_volume; i++)
-        {
-            Vector3Int point_position = GridPosition(i, chunk_grid_size);
+        Mesh mesh = new Mesh();
 
-            //int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
-            //Color color = gradient.Evaluate((densities[chunk_lattice_index] + 1) / 2f);
-            //if (densities[chunk_lattice_index] > 0) DrawUnitCube(point_position, .5f, color);
-        }
-
-        DrawCube(Vector3.zero, Vector3.one * 32, Color.white);
-    }
-
-    void GenerateMesh()
-    {
-
+        List<Vector3> vertices = new List<Vector3>();
+        List<Vector3> normals = new List<Vector3>();
+        List<int> triangles = new List<int>();
 
         for (int i = 0; i < chunk_grid_volume; i++)
         {
@@ -350,7 +345,7 @@ public class Chunk : MonoBehaviour
             for (int j = 0; j < 8; j++)
             {
                 float cell_vertex_density = (float)cells[i][j][1];
-                if (cell_vertex_density > 0) triangulation_index |= 1 << j;
+                if (cell_vertex_density < 0) triangulation_index |= 1 << j;
             }
 
             // generate triangulation for this cell
@@ -370,33 +365,33 @@ public class Chunk : MonoBehaviour
 
                 triangle_vertices.Add(Vector3.Lerp((Vector3Int)cells[i][vertex_index_A][0], (Vector3Int)cells[i][vertex_index_B][0], bias));
             }
-            AppendTriangles(triangle_vertices);
+
+            AppendTriangles(triangle_vertices, vertices, normals, triangles);
         }
 
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.normals = normals.ToArray();
 
-        var mesh_filter = gameObject.AddComponent<MeshFilter>();
-        var mesh_renderer = gameObject.AddComponent<MeshRenderer>();
-
-        mesh_filter.sharedMesh = mesh;
-        mesh_renderer.material = mesh_material;
+        gameObject.GetComponent<MeshFilter>().sharedMesh = mesh;
+        //mesh_renderer.material = mesh_material;
     }
 
-    void GenerateDensities()
+    private void GenerateDensities()
     {
         densities = new float[chunk_lattice_volume];
         for (int i = 0; i < chunk_lattice_volume; i++)
         {
-            Vector3Int point_position = GridPosition(i, chunk_lattice_size);
+            Vector3Int point_position = GridPosition(i, chunk_lattice_size) + Vector3Int.RoundToInt(transform.localPosition);
 
             densities[i] = GetDensity(point_position);
         }
     }
 
-    void GenerateCellData()
+    private void GenerateCellData()
     {
+        cells = new List<List<ArrayList>>();
+
         for (int i = 0; i < chunk_grid_volume; i++)
         {
             Vector3Int point_position = GridPosition(i, chunk_grid_size);
@@ -418,7 +413,7 @@ public class Chunk : MonoBehaviour
         }
     }
 
-    void AppendTriangles(List<Vector3> triangle_vertices)
+    private void AppendTriangles(List<Vector3> triangle_vertices, List<Vector3> vertices, List<Vector3> normals, List<int> triangles)
     {
         for (int i = 0; i < triangle_vertices.Count / 3; i++)
         {
@@ -426,11 +421,11 @@ public class Chunk : MonoBehaviour
             Vector3 v3 = triangle_vertices[i * 3 + 1];
             Vector3 v2 = triangle_vertices[i * 3 + 2];
 
-            AppendTriangle(v1, v2, v3);
+            AppendTriangle(v1, v2, v3, vertices, normals, triangles);
         }
     }
 
-    void AppendTriangle(Vector3 v1, Vector3 v2, Vector3 v3) //change for acutal mesh
+    private void AppendTriangle(Vector3 v1, Vector3 v2, Vector3 v3, List<Vector3> vertices, List<Vector3> normals, List<int> triangles) //change for acutal mesh
     {
         vertices.Add(v1);
         vertices.Add(v2);
@@ -451,14 +446,7 @@ public class Chunk : MonoBehaviour
         //Debug.DrawLine(v3, v1, Color.white, float.PositiveInfinity);
     }
 
-    void BreakVector3IntIntoComponents(Vector3Int v, out int x, out int y, out int z)
-    {
-        x = v.x;
-        y = v.y;
-        z = v.z;
-    }
-
-    Vector3Int GridPosition(int index, Vector3Int grid_size) // from an index get a position in a grid
+    private Vector3Int GridPosition(int index, Vector3Int grid_size) // from an index get a position in a grid
     {
         int x =  index                                % grid_size.x;
         int y = (index /  grid_size.x)                % grid_size.y;
@@ -466,26 +454,26 @@ public class Chunk : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    void GetGridParts(Vector3Int grid_size, out int grid_row, out int grid_slice, out int grid_volume) // split a grid into its components for easier math
+    private void GetGridParts(Vector3Int grid_size, out int grid_row, out int grid_slice, out int grid_volume) // split a grid into its components for easier math
     {
         grid_row    = grid_size.x;
         grid_slice  = grid_size.x * grid_size.y;
         grid_volume = grid_size.x * grid_size.y * grid_size.z;
     }
 
-    void DrawPoint(Vector3 position, Color color) // draw a point at a position
+    private void DrawPoint(Vector3 position, Color color) // draw a point at a position // this is debug stuff to be removed
     {
         Debug.DrawRay(position - Vector3.right   / 10, Vector3.right   / 5, color);
         Debug.DrawRay(position - Vector3.up      / 10, Vector3.up      / 5, color);
         Debug.DrawRay(position - Vector3.forward / 10, Vector3.forward / 5, color);
     }
 
-    void DrawUnitCube(Vector3 position, float scale, Color color) // draw a 1x1 cube, scale makes it bigger and smaller from is center
+    private void DrawUnitCube(Vector3 position, float scale, Color color) // draw a 1x1 cube, scale makes it bigger and smaller from is center // this is debug stuff to be removed
     {
         DrawCube(position + Vector3.one * ((1 - scale) / 2f), Vector3.one - Vector3.one * (1 - scale), color);
     }
 
-    void DrawCube(Vector3 position, Vector3 size, Color color)
+    private void DrawCube(Vector3 position, Vector3 size, Color color)
     {
         Debug.DrawRay(position, new Vector3(size.x, 0, 0), color);
         Debug.DrawRay(position, new Vector3(0, size.y, 0), color);
@@ -505,30 +493,45 @@ public class Chunk : MonoBehaviour
         Debug.DrawRay(position + size, new Vector3(0, 0, -size.z), color);
     }
 
-    float GetDensity(Vector3Int position)
+    private float GetDensity(Vector3Int position)
     {
         float density = 0;
-        density += Noise3D(position, 40, 2);
-        density += SurfaceNoise(position, 16, 40, 4);
+        density += Noise3D(position, 40, 2) / 2;
+        //density += SurfaceNoise(position, 16, 40, 4);
+        density += SphereSurfaceNoise(position, 6, 14, 4, 4);
         //if (position.y < 1) density += 1;
         //density -= position.y / 16f;
         return density;
     }
 
-
-
-    float SurfaceNoise(Vector3 position, float max_height, float scale, int octaves)
+    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves)
     {
-        float noise = Noise2D(new Vector2(position.x, position.z), scale, octaves);
+        Vector3 sphere_position = chunk_grid_size/2 + transform.localPosition;
+
+        float noise = Noise3D((position - sphere_position).normalized + sphere_position, noise_scale, octaves);
+        float t = (noise + 1) / 2f;
+        float surface_height = Mathf.Lerp(min_height, max_height, height_map.Evaluate(t));
+
+        float radius = (position - sphere_position).magnitude;
+
+        float density = (radius - surface_height) / (max_height - min_height) * 2;
+
+        return density;
+
+    }
+
+    private float SurfaceNoise(Vector3 position, float max_height, float noise_scale, int octaves)
+    {
+        float noise = Noise2D(new Vector2(position.x, position.z), noise_scale, octaves);
 
         float surfaceHeight = Mathf.Lerp(0, max_height, (noise + 1) / 2f);
  
-        return (surfaceHeight - position.y) / ((max_height / 2f) * 1 / 0.5f);
+        return (position.y - surfaceHeight) / ((max_height / 2f) * 1 / 0.5f);
     }
 
-    float Noise2D(Vector2 position, float scale, int octaves)
+    private float Noise2D(Vector2 position, float noise_scale, int octaves)
     {
-        position *= 1 / scale;
+        position *= 1 / noise_scale;
 
         float noise = 0;
         for (int i = 0; i < octaves; i++)
@@ -539,15 +542,15 @@ public class Chunk : MonoBehaviour
         return Mathf.Clamp(noise, -1, 1);
     }
 
-    float PerlinNoise2D(Vector2 position)
+    private float PerlinNoise2D(Vector2 position)
     {
         return Mathf.PerlinNoise(position.x, position.y) * 2 - 1;
     }
 
-    float Noise3D(Vector3 position, float scale, int octaves)
+    private float Noise3D(Vector3 position, float noise_scale, int octaves)
     {
 
-        position *= 1 / scale;
+        position *= 1 / noise_scale;
         
         float noise = 0;
         for (int i = 0; i < octaves; i++)
@@ -558,7 +561,7 @@ public class Chunk : MonoBehaviour
         return Mathf.Clamp(noise, -1, 1);
     }
 
-    public static float PerlinNoise3D(Vector3 position)
+    private static float PerlinNoise3D(Vector3 position)
     { 
         // https://discussions.unity.com/t/3d-perlin-noise/134957
 
@@ -578,7 +581,7 @@ public class Chunk : MonoBehaviour
         return ((xy * xz * yz * yx * zx * zy) * 2 - 1);
     }
 
-    static float perlin3DFixed(float a, float b)
+    private static float perlin3DFixed(float a, float b)
     {
         return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
     }
