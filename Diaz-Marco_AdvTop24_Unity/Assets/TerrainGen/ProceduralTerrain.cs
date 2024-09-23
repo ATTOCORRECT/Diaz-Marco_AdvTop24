@@ -1,23 +1,32 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[Serializable]
 public class ProceduralTerrain
-{
-    private int seed;
+{   
+    [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
+    private long seed = 000000000000000000;
+    [SerializeField]
+    private float min_height = 8;
+    [SerializeField]
+    private float max_height = 32;
+    [SerializeField]
+    private AnimationCurve height_map = AnimationCurve.Linear(0, 0, 1, 1);
+
     private Vector3 seed_position;
 
-    public ProceduralTerrain(int seed)
+    public ProceduralTerrain(long seed)
     {
-        this.seed = seed;
-        seed_position = 
+        SetSeed(seed);
     }
 
     // Debug Methods (I didnt know gizmos existed)
     public static void DrawPoint(Vector3 position, Color color) // draw a point at a position // this is debug stuff to be removed
     {
-        Debug.DrawRay(position - Vector3.right / 10, Vector3.right / 5, color);
-        Debug.DrawRay(position - Vector3.up / 10, Vector3.up / 5, color);
+        Debug.DrawRay(position - Vector3.right   / 10, Vector3.right   / 5, color);
+        Debug.DrawRay(position - Vector3.up      / 10, Vector3.up      / 5, color);
         Debug.DrawRay(position - Vector3.forward / 10, Vector3.forward / 5, color);
     }
 
@@ -48,30 +57,43 @@ public class ProceduralTerrain
     // ----------
 
     // Terrain Gen Methods
-    private Vector3 GenerateSeedPosition(int seed)
+    public void UpdateSeed()
     {
-        // https://www.desmos.com/calculator/0dyvv5iyxr
-        return Vector3.zero;
+        GenerateSeedPosition(seed);
     }
-
-
+    public void SetSeed(long seed)
+    {
+        this.seed = seed;
+        GenerateSeedPosition(seed);
+    }
+    
+    private void GenerateSeedPosition(long seed)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            long value = (seed / (long)Mathf.Pow(10, 6 * i)) % (long)Mathf.Pow(10, 6); // https://www.desmos.com/calculator/0dyvv5iyxr
+            seed_position[i] = (int)value;
+            Debug.Log(value);
+        }
+        seed_position += Vector3.one * 111.111f;
+    }
 
     public float GetDensity(Vector3Int position)
     {
         float density = 0;
         //density += Noise3D(position, 40, 2) / 8;
         //density += SurfaceNoise(position, 16, 40, 4);
-        density += SphereSurfaceNoise(position, 1, 28, 4, 4);
+        density += SphereSurfaceNoise(position, min_height, max_height, 4, 4);
         //if (position.y < 1) density += 1;
         //density -= position.y / 16f;
         return density;
     }
 
-    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves)
+    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
     {
-        float noise = Noise3D((position).normalized + seed_position, noise_scale, octaves);
+        float noise = Noise3D((position).normalized + seed_position / 10f, noise_scale, octaves);
         float t = (noise + 1) / 2f;
-        float surface_height = Mathf.Lerp(min_height, max_height, t);// height_map.Evaluate(t));
+        float surface_height = Mathf.Lerp(min_height, max_height, height_map.Evaluate(t));
 
         float radius = (position).magnitude;
 
@@ -81,45 +103,44 @@ public class ProceduralTerrain
 
     }
 
-    private float SurfaceNoise(Vector3 position, float max_height, float noise_scale, int octaves)
+    private float SurfaceNoise(Vector3 position, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain [deprecated]
     {
         float noise = Noise2D(new Vector2(position.x, position.z), noise_scale, octaves);
-
-        float surfaceHeight = Mathf.Lerp(0, max_height, (noise + 1) / 2f);
+        float t = (noise + 1) / 2f;
+        float surfaceHeight = Mathf.Lerp(0, max_height, t);
 
         return (position.y - surfaceHeight) / ((max_height / 2f) * 1 / 0.5f);
     }
 
     private float Noise2D(Vector2 position, float noise_scale, int octaves)
     {
-        position *= 1 / noise_scale;
+        position *= 1 / noise_scale; // scale noise
 
         float noise = 0;
-        for (int i = 0; i < octaves; i++)
+        for (int i = 0; i < octaves; i++) // add together octaves to make fractal noise
         {
-            noise += PerlinNoise2D(position * Mathf.Pow(2, i)) / Mathf.Pow(2, i);
+            noise += PerlinNoise2D(position * Mathf.Pow(2, i + 1)) / Mathf.Pow(2, i + 1);
         }
 
-        return Mathf.Clamp(noise, -1, 1);
+        return Mathf.Clamp(noise, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
     }
 
     private float PerlinNoise2D(Vector2 position)
     {
-        return Mathf.PerlinNoise(position.x, position.y) * 2 - 1;
+        return Mathf.PerlinNoise(position.x, position.y) * 2 - 1; // returns 2D perlin scaled to a range of -1 to 1
     }
 
     private float Noise3D(Vector3 position, float noise_scale, int octaves)
     {
-
-        position *= 1 / noise_scale;
+        position *= 1 / noise_scale; // scale noise
 
         float noise = 0;
-        for (int i = 0; i < octaves; i++)
+        for (int i = 0; i < octaves; i++) // add together octaves to make fractal noise
         {
-            noise += PerlinNoise3D(position * Mathf.Pow(2, i)) / Mathf.Pow(2, i);
+            noise += PerlinNoise3D(position * Mathf.Pow(2, i + 1)) / Mathf.Pow(2, i + 1);
         }
 
-        return Mathf.Clamp(noise, -1, 1);
+        return Mathf.Clamp(noise, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
     }
 
     private float PerlinNoise3D(Vector3 position)
@@ -130,6 +151,7 @@ public class ProceduralTerrain
         float y = position.y;
         float z = position.z;
 
+        x += 10000; // prevent mirroring along x, i have no idea why it does
         y += 1;
         z += 2;
         float xy = perlin3DFixed(x, y);

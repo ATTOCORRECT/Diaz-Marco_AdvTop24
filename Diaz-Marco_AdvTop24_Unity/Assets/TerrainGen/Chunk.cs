@@ -4,28 +4,27 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
-
 [ExecuteInEditMode]
 public class Chunk : MonoBehaviour
 {
-    public bool reload;
-
-    public AnimationCurve height_map;
-
     // Chunk Variables
-    Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
-    int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
+    private bool generatedBefore = false;
+
+    private ProceduralTerrain procedural_terrain;
+
+    private static readonly Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
+    private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
     Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
-    int chunk_grid_row, chunk_grid_slice, chunk_grid_volume;
+    private int chunk_grid_row, chunk_grid_slice, chunk_grid_volume;
 
-    List<List<ArrayList>> cells;
+    private List<List<ArrayList>> cells;
 
-    float[] densities;
+    private float[] densities;
     // -----
 
     // Tables
-    readonly int[][] TRIANGULATION_TABLE = {
+    private readonly int[][] TRIANGULATION_TABLE = {
     new int[]{-1},
     new int[]{ 0, 8, 3, -1 },
     new int[]{ 0, 1, 9, -1 },
@@ -284,7 +283,7 @@ public class Chunk : MonoBehaviour
     new int[]{-1}
     }; // surely theres a better way to do this
 
-    readonly int[][] EDGE_TABLE = {
+    private readonly int[][] EDGE_TABLE = {
     new int[]{ 0, 1},
     new int[]{ 1, 2},
     new int[]{ 2, 3},
@@ -299,35 +298,41 @@ public class Chunk : MonoBehaviour
     new int[]{ 3, 7}
     };
     // ------
-    void Awake()
-    {
-        chunk_lattice_size = chunk_grid_size + Vector3Int.one;
-
-        GetGridParts(chunk_lattice_size, out chunk_lattice_row, out chunk_lattice_slice, out chunk_lattice_volume);
-        GetGridParts(chunk_grid_size   , out chunk_grid_row   , out chunk_grid_slice   , out chunk_grid_volume   );
-
-        GenerateChunk();
-    }
 
     // Update is called once per frame
     void Update()
     {
-        if (reload)
-        {
-            //reload = false;
-            GenerateChunk();
-        }
-
         ProceduralTerrain.DrawCube(transform.position, chunk_grid_size, Color.white);
     }
 
     public void GenerateChunk()
     {
+        Debug.Log("Generating Chunk");
+        if (!generatedBefore)
+        {
+            generatedBefore = true;
+
+            chunk_lattice_size = chunk_grid_size + Vector3Int.one;
+
+            Utils.GetGridParts(chunk_lattice_size, out chunk_lattice_row, out chunk_lattice_slice, out chunk_lattice_volume);
+            Utils.GetGridParts(chunk_grid_size, out chunk_grid_row, out chunk_grid_slice, out chunk_grid_volume);
+        }
+
         GenerateDensities();
 
         GenerateCellData();
 
         GenerateMesh();
+    }
+
+    public void SetChunkProceduralTerrain(ref ProceduralTerrain procedural_terrain)
+    {
+        this.procedural_terrain = procedural_terrain;
+    }
+
+    public static Vector3Int GetChunkSize()
+    {
+        return chunk_grid_size;
     }
 
     private void GenerateMesh()
@@ -382,9 +387,9 @@ public class Chunk : MonoBehaviour
         densities = new float[chunk_lattice_volume];
         for (int i = 0; i < chunk_lattice_volume; i++)
         {
-            Vector3Int point_position = GridPosition(i, chunk_lattice_size) + Vector3Int.RoundToInt(transform.localPosition);
+            Vector3Int point_position = Utils.GridPosition(i, chunk_lattice_size) + Vector3Int.RoundToInt(transform.localPosition);
 
-            densities[i] = ProceduralTerrain.GetDensity(point_position);
+            densities[i] = procedural_terrain.GetDensity(point_position);
         }
     }
 
@@ -394,7 +399,7 @@ public class Chunk : MonoBehaviour
 
         for (int i = 0; i < chunk_grid_volume; i++)
         {
-            Vector3Int point_position = GridPosition(i, chunk_grid_size);
+            Vector3Int point_position = Utils.GridPosition(i, chunk_grid_size);
 
             int chunk_lattice_index = point_position.x + (point_position.y * chunk_lattice_row) + (point_position.z * chunk_lattice_slice);
 
@@ -444,20 +449,5 @@ public class Chunk : MonoBehaviour
         //Debug.DrawLine(v1, v2, Color.white, float.PositiveInfinity);
         //Debug.DrawLine(v2, v3, Color.white, float.PositiveInfinity);
         //Debug.DrawLine(v3, v1, Color.white, float.PositiveInfinity);
-    }
-
-    private Vector3Int GridPosition(int index, Vector3Int grid_size) // from an index get a position in a grid
-    {
-        int x =  index                                % grid_size.x;
-        int y = (index /  grid_size.x)                % grid_size.y;
-        int z = (index / (grid_size.x * grid_size.y)) % grid_size.z;
-        return new Vector3Int(x, y, z);
-    }
-
-    private void GetGridParts(Vector3Int grid_size, out int grid_row, out int grid_slice, out int grid_volume) // split a grid into its components for easier math
-    {
-        grid_row    = grid_size.x;
-        grid_slice  = grid_size.x * grid_size.y;
-        grid_volume = grid_size.x * grid_size.y * grid_size.z;
     }
 }
