@@ -9,9 +9,9 @@ public class ProceduralTerrain
     [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
     private long seed = 000000000000000000;
     [SerializeField]
-    private float min_height = 8;
+    private float min_height;
     [SerializeField]
-    private float max_height = 32;
+    private float max_height;
     [SerializeField]
     private AnimationCurve height_map = AnimationCurve.Linear(0, 0, 1, 1);
 
@@ -81,7 +81,7 @@ public class ProceduralTerrain
     public float GetDensity(Vector3Int position)
     {
         float density = 0;
-        //density += Noise3D(position, 40, 2) / 8;
+        //density += Noise3D(position + seed_position / 10f, 64, 2);/// 8;
         //density += SurfaceNoise(position, 16, 40, 4);
         density += SphereSurfaceNoise(position, min_height, max_height, 4, 4);
         //if (position.y < 1) density += 1;
@@ -116,13 +116,19 @@ public class ProceduralTerrain
     {
         position *= 1 / noise_scale; // scale noise
 
-        float noise = 0;
+        float noiseSum = 0;
+        float amplitude = 1;
+        float frequency = 1;
         for (int i = 0; i < octaves; i++) // add together octaves to make fractal noise
         {
-            noise += PerlinNoise2D(position * Mathf.Pow(2, i + 1)) / Mathf.Pow(2, i + 1);
+            noiseSum += PerlinNoise2D(position * frequency) * amplitude;
+
+            frequency *= 2;
+
+            amplitude *= 0.5f;
         }
 
-        return Mathf.Clamp(noise, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
+        return Mathf.Clamp(noiseSum, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
     }
 
     private float PerlinNoise2D(Vector2 position)
