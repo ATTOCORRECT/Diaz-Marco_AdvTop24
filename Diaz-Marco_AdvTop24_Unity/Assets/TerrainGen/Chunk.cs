@@ -354,7 +354,7 @@ public class Chunk : MonoBehaviour
             for (int j = 0; j < 8; j++)
             {
                 float cell_vertex_density = (float)cells[i][j][1];
-                if (cell_vertex_density < 0) triangulation_index |= 1 << j;
+                if (cell_vertex_density > 0) triangulation_index |= 1 << j;
             }
 
             // generate triangulation for this cell

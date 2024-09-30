@@ -6,8 +6,13 @@ RWStructuredBuffer<float> densities;
 int3 localPosition;
 uint3 latticeSize;
 
+float squashingFactor = 10;
+
+float midHeight = 8;
+
 float FractalNoise3D(float3 position, int octaves, float scale)
 {
+    position += float3(123.456, 789.123, 456.789);
     position *= 1/scale;
     
     float noiseSum = 0;
@@ -35,10 +40,26 @@ int3 GridPosition(int index, uint3 gridSize) // from an index get a position in 
 [numthreads(1, 1, 1)]
 void CSMain (uint3 id : SV_DispatchThreadID)
 {
-    float3 position = GridPosition(id.x, latticeSize) + localPosition + float3(123.456, 789.123, 456.789);
+    float3 position = GridPosition(id.x, latticeSize) + localPosition;
     
-    float noise = FractalNoise3D(position, 3, 64);
+    float squash = -length(position) * 10 + 8 * 10;
+    
+    float noise = FractalNoise3D(position, 3, 64) + squash;
     
     densities[id.x] = noise;
 }
+
+//float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
+//{
+//    float noise = Noise3D((position).normalized + seed_position / 10f, noise_scale, octaves);
+//    float t = (noise + 1) / 2f;
+//    float surface_height = Mathf.Lerp(min_height, max_height, height_map.Evaluate(t));
+//
+//    float radius = (position).magnitude;
+//
+//    float density = (radius - surface_height) / (max_height - min_height) * 2;
+//
+//    return density;
+//
+//}
 
