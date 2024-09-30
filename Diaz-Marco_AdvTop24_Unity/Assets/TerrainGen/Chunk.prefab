@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7100508848608026042}
-  - component: {fileID: 3408893415539542115}
+  - component: {fileID: 2277002238683731947}
   - component: {fileID: 2649914255528041110}
   - component: {fileID: 7276978599997422999}
   m_Layer: 0
@@ -34,7 +34,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3408893415539542115
+--- !u!114 &2277002238683731947
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -46,85 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f1ff66a7ee60d54481733d757d0424b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reload: 0
-  height_map:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: -0.018642275
-      outSlope: -0.018642275
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.2567178
-    - serializedVersion: 3
-      time: 0.2352115
-      value: 0.9531189
-      inSlope: -0.4677638
-      outSlope: -0.19766372
-      tangentMode: 1
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.28145775
-    - serializedVersion: 3
-      time: 0.44111615
-      value: 0.89365625
-      inSlope: -0.73383576
-      outSlope: -2.1688197
-      tangentMode: 1
-      weightedMode: 0
-      inWeight: 0.13910303
-      outWeight: 0.7184103
-    - serializedVersion: 3
-      time: 0.47164094
-      value: 0.4611146
-      inSlope: -5.4329467
-      outSlope: Infinity
-      tangentMode: 1
-      weightedMode: 0
-      inWeight: 0.03280129
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.5730863
-      value: 0.45830315
-      inSlope: 8.329348
-      outSlope: 8.329348
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.121257655
-    - serializedVersion: 3
-      time: 0.5844924
-      value: 0.63289803
-      inSlope: 2.8738327
-      outSlope: 0.41712877
-      tangentMode: 1
-      weightedMode: 0
-      inWeight: 1
-      outWeight: 0.2407716
-    - serializedVersion: 3
-      time: 0.8375704
-      value: 0.66734785
-      inSlope: 0.31599024
-      outSlope: 0.18698215
-      tangentMode: 1
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.32937557
-    - serializedVersion: 3
-      time: 0.9953703
-      value: 0.7103958
-      inSlope: 0.000024044466
-      outSlope: 0.000024044466
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.18598533
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
+  densityCompute: {fileID: 7200000, guid: cdb0e1333a0b48c4bb35495a73f4ed07, type: 3}
 --- !u!33 &2649914255528041110
 MeshFilter:
   m_ObjectHideFlags: 0

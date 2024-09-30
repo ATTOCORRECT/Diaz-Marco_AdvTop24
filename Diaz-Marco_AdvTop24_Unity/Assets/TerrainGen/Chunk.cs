@@ -10,7 +10,7 @@ public class Chunk : MonoBehaviour
     // Chunk Variables
     private bool generatedBefore = false;
 
-    private ProceduralTerrain procedural_terrain;
+    private TerrainData procedural_terrain;
 
     private static readonly Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
     private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
@@ -302,12 +302,11 @@ public class Chunk : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        ProceduralTerrain.DrawCube(transform.position, chunk_grid_size, Color.white);
+        Utils.DrawCube(transform.position, chunk_grid_size, Color.white);
     }
 
     public void GenerateChunk()
     {
-        Debug.Log("Generating Chunk");
         if (!generatedBefore)
         {
             generatedBefore = true;
@@ -325,7 +324,7 @@ public class Chunk : MonoBehaviour
         GenerateMesh();
     }
 
-    public void SetChunkProceduralTerrain(ref ProceduralTerrain procedural_terrain)
+    public void SetChunkProceduralTerrain(ref TerrainData procedural_terrain)
     {
         this.procedural_terrain = procedural_terrain;
     }
@@ -333,6 +332,11 @@ public class Chunk : MonoBehaviour
     public static Vector3Int GetChunkSize()
     {
         return chunk_grid_size;
+    }
+
+    private void GenerateDensities()
+    {
+        densities = procedural_terrain.GetDensities(chunk_lattice_size, transform.localPosition);
     }
 
     private void GenerateMesh()
@@ -380,17 +384,6 @@ public class Chunk : MonoBehaviour
 
         gameObject.GetComponent<MeshFilter>().sharedMesh = mesh;
         //mesh_renderer.material = mesh_material;
-    }
-
-    private void GenerateDensities()
-    {
-        densities = new float[chunk_lattice_volume];
-        for (int i = 0; i < chunk_lattice_volume; i++)
-        {
-            Vector3Int point_position = Utils.GridPosition(i, chunk_lattice_size) + Vector3Int.RoundToInt(transform.localPosition);
-
-            densities[i] = procedural_terrain.GetDensity(point_position);
-        }
     }
 
     private void GenerateCellData()

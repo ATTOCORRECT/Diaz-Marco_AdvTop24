@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public class ProceduralTerrain
-{   
+public class TerrainData
+{
+    [SerializeField]
+    private ComputeShader densityCompute;
     [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
-    private long seed = 000000000000000000;
+    public long seed = 000000000000000000;
     [SerializeField]
     private float min_height;
     [SerializeField]
@@ -17,44 +19,10 @@ public class ProceduralTerrain
 
     private Vector3 seed_position;
 
-    public ProceduralTerrain(long seed)
+    public TerrainData(long seed)
     {
         SetSeed(seed);
     }
-
-    // Debug Methods (I didnt know gizmos existed)
-    public static void DrawPoint(Vector3 position, Color color) // draw a point at a position // this is debug stuff to be removed
-    {
-        Debug.DrawRay(position - Vector3.right   / 10, Vector3.right   / 5, color);
-        Debug.DrawRay(position - Vector3.up      / 10, Vector3.up      / 5, color);
-        Debug.DrawRay(position - Vector3.forward / 10, Vector3.forward / 5, color);
-    }
-
-    public static void DrawUnitCube(Vector3 position, float scale, Color color) // draw a 1x1 cube, scale makes it bigger and smaller from is center // this is debug stuff to be removed
-    {
-        DrawCube(position + Vector3.one * ((1 - scale) / 2f), Vector3.one - Vector3.one * (1 - scale), color);
-    }
-
-    public static void DrawCube(Vector3 position, Vector3 size, Color color)
-    {
-        Debug.DrawRay(position, new Vector3(size.x, 0, 0), color);
-        Debug.DrawRay(position, new Vector3(0, size.y, 0), color);
-        Debug.DrawRay(position, new Vector3(0, 0, size.z), color);
-
-        Debug.DrawRay(position + new Vector3(size.x, 0, 0), new Vector3(0, size.y, 0), color);
-        Debug.DrawRay(position + new Vector3(size.x, 0, 0), new Vector3(0, 0, size.z), color);
-
-        Debug.DrawRay(position + new Vector3(0, size.y, 0), new Vector3(size.x, 0, 0), color);
-        Debug.DrawRay(position + new Vector3(0, size.y, 0), new Vector3(0, 0, size.z), color);
-
-        Debug.DrawRay(position + new Vector3(0, 0, size.z), new Vector3(size.x, 0, 0), color);
-        Debug.DrawRay(position + new Vector3(0, 0, size.z), new Vector3(0, size.y, 0), color);
-
-        Debug.DrawRay(position + size, new Vector3(-size.x, 0, 0), color);
-        Debug.DrawRay(position + size, new Vector3(0, -size.y, 0), color);
-        Debug.DrawRay(position + size, new Vector3(0, 0, -size.z), color);
-    }
-    // ----------
 
     // Terrain Gen Methods
     public void UpdateSeed()
@@ -67,26 +35,37 @@ public class ProceduralTerrain
         GenerateSeedPosition(seed);
     }
     
+    public float[] GetDensities(Vector3Int lattice_size, Vector3 position)
+    {
+        // setup parameters and copy to compute buffer
+        float[] densities = new float[lattice_size.x * lattice_size.y * lattice_size.z];
+        var buffer = new ComputeBuffer(densities.Length, sizeof(float));
+        buffer.SetData(densities);
+        densityCompute.SetBuffer(0, "densities", buffer);
+        densityCompute.SetVector("localPosition", position);
+        densityCompute.SetVector("latticeSize", (Vector3)lattice_size);
+
+        // run compute shader
+        int threadGroups = densities.Length / 1;
+        densityCompute.Dispatch(0, threadGroups, 1, 1);
+
+        // copy calculated densities back to densities array
+        buffer.GetData(densities);
+
+        // release buffer from memory
+        buffer.Release();
+
+        return densities;
+    }
+
     private void GenerateSeedPosition(long seed)
     {
         for (int i = 0; i < 3; i++)
         {
             long value = (seed / (long)Mathf.Pow(10, 6 * i)) % (long)Mathf.Pow(10, 6); // https://www.desmos.com/calculator/0dyvv5iyxr
             seed_position[i] = (int)value;
-            Debug.Log(value);
         }
         seed_position += Vector3.one * 111.111f;
-    }
-
-    public float GetDensity(Vector3Int position)
-    {
-        float density = 0;
-        //density += Noise3D(position + seed_position / 10f, 64, 2);/// 8;
-        //density += SurfaceNoise(position, 16, 40, 4);
-        density += SphereSurfaceNoise(position, min_height, max_height, 4, 4);
-        //if (position.y < 1) density += 1;
-        //density -= position.y / 16f;
-        return density;
     }
 
     private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere

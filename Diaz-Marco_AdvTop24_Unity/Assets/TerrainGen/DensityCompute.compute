@@ -1,0 +1,44 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#include "noiseSimplex.cginc"
+
+RWStructuredBuffer<float> densities;
+int3 localPosition;
+uint3 latticeSize;
+
+float FractalNoise3D(float3 position, int octaves, float scale)
+{
+    position *= 1/scale;
+    
+    float noiseSum = 0;
+    float amplitude = 1;
+    float frequency = 1;
+
+    for (int i = 0; i < octaves; i++)
+    {
+        noiseSum += snoise(position * frequency) * amplitude;
+        
+        frequency *= 2;
+        amplitude *= 0.5f;
+    }
+    return noiseSum;
+}
+  
+int3 GridPosition(int index, uint3 gridSize) // from an index get a position in a grid
+{
+    int x =  index                              % gridSize.x;
+    int y = (index /  gridSize.x)               % gridSize.y;
+    int z = (index / (gridSize.x * gridSize.y)) % gridSize.z;
+    return int3(x, y, z);
+}
+
+[numthreads(1, 1, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float3 position = GridPosition(id.x, latticeSize) + localPosition + float3(123.456, 789.123, 456.789);
+    
+    float noise = FractalNoise3D(position, 3, 64);
+    
+    densities[id.x] = noise;
+}
+

@@ -14,14 +14,14 @@ public class Planet : MonoBehaviour
     [SerializeField]
     private Object chunk_prefab;
     [SerializeField]
-    ProceduralTerrain procedural_terrain;
+    TerrainData procedural_terrain;
     [SerializeField]
     private Vector3Int area_size;
     
 
     void Awake()
     {
-        procedural_terrain = new ProceduralTerrain(0);
+       // procedural_terrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
         RemoveAndAddChunks();
     }
 
