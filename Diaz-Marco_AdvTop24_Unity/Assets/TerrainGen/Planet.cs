@@ -41,7 +41,7 @@ public class Planet : MonoBehaviour
         }
     }
 
-    void ReloadChunks()
+    private void ReloadChunks()
     {
         Chunk[] chunk_scripts = gameObject.GetComponentsInChildren<Chunk>();
 
@@ -52,7 +52,7 @@ public class Planet : MonoBehaviour
         }
     }
 
-    void RemoveAndAddChunks()
+    private void RemoveAndAddChunks()
     {
         ClearChildren();
 
@@ -60,7 +60,7 @@ public class Planet : MonoBehaviour
         for (int i = 0; i < area_volume; i++)
         {
             Vector3 position = Utils.GridPosition(i, area_size) * Chunk.GetChunkSize();
-            position -= (Vector3)(area_size * Chunk.GetChunkSize()) / 2f; // center chunks
+            //position -= (Vector3)(area_size * Chunk.GetChunkSize()) / 2f; // center chunks
 
             Object chunk = Instantiate(chunk_prefab, position, Quaternion.identity, transform); // add chunks
             Chunk chunk_script = chunk.GetComponent<Chunk>();
@@ -70,7 +70,7 @@ public class Planet : MonoBehaviour
         }
     }
 
-    public void ClearChildren() // https://stackoverflow.com/a/46359133 
+    private void ClearChildren() // https://stackoverflow.com/a/46359133 
     {
         int i = 0;
 

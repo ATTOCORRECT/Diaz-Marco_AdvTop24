@@ -1,14 +1,17 @@
 // Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel Density
 #include "noiseSimplex.cginc"
 
 RWStructuredBuffer<float> densities;
 int3 localPosition;
 uint3 latticeSize;
+float squashingFactor;
+float midHeight;
 
-float squashingFactor = 10;
-
-float midHeight = 8;
+int indexFromCoord(uint x, uint y, uint z, uint3 gridSize)
+{
+    return z * gridSize.x * gridSize.y + y * gridSize.x + x;
+}
 
 float FractalNoise3D(float3 position, int octaves, float scale)
 {
@@ -28,25 +31,23 @@ float FractalNoise3D(float3 position, int octaves, float scale)
     }
     return noiseSum;
 }
-  
-int3 GridPosition(int index, uint3 gridSize) // from an index get a position in a grid
-{
-    int x =  index                              % gridSize.x;
-    int y = (index /  gridSize.x)               % gridSize.y;
-    int z = (index / (gridSize.x * gridSize.y)) % gridSize.z;
-    return int3(x, y, z);
-}
 
-[numthreads(1, 1, 1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+[numthreads(8, 8, 8)]
+void Density (uint3 id : SV_DispatchThreadID)
 {
-    float3 position = GridPosition(id.x, latticeSize) + localPosition;
+    if (id.x >= latticeSize.x || id.y >= latticeSize.y || id.z >= latticeSize.z)
+    {
+        return;
+    }
     
-    float squash = -length(position) * 10 + 8 * 10;
+    float3 position = id + localPosition;
+    //                                vv CENTER
+    float squash = -length(position - float3(32, 32, 32)) * squashingFactor + midHeight * squashingFactor;
     
     float noise = FractalNoise3D(position, 3, 64) + squash;
     
-    densities[id.x] = noise;
+    int index = indexFromCoord(id.x, id.y, id.z, latticeSize);
+    densities[index] = noise;
 }
 
 //float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere

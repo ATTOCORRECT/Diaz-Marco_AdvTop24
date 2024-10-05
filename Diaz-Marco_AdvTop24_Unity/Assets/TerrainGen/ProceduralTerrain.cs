@@ -9,13 +9,13 @@ public class TerrainData
     [SerializeField]
     private ComputeShader densityCompute;
     [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
-    public long seed = 000000000000000000;
+    private long seed = 000000000000000000;
     [SerializeField]
-    private float min_height;
+    private float squashingFactor;
     [SerializeField]
-    private float max_height;
+    private float midHeight;
     [SerializeField]
-    private AnimationCurve height_map = AnimationCurve.Linear(0, 0, 1, 1);
+    //private AnimationCurve height_map = AnimationCurve.Linear(0, 0, 1, 1);
 
     private Vector3 seed_position;
 
@@ -44,10 +44,10 @@ public class TerrainData
         densityCompute.SetBuffer(0, "densities", buffer);
         densityCompute.SetVector("localPosition", position);
         densityCompute.SetVector("latticeSize", (Vector3)lattice_size);
-
+        densityCompute.SetFloat("squashingFactor", squashingFactor);
+        densityCompute.SetFloat("midHeight", midHeight);
         // run compute shader
-        int threadGroups = densities.Length / 1;
-        densityCompute.Dispatch(0, threadGroups, 1, 1);
+        densityCompute.Dispatch(0, 5, 5, 5);
 
         // copy calculated densities back to densities array
         buffer.GetData(densities);
@@ -68,7 +68,7 @@ public class TerrainData
         seed_position += Vector3.one * 111.111f;
     }
 
-    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
+/*    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
     {
         float noise = Noise3D((position).normalized + seed_position / 10f, noise_scale, octaves);
         float t = (noise + 1) / 2f;
@@ -152,5 +152,5 @@ public class TerrainData
     private float perlin3DFixed(float a, float b)
     {
         return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
-    }
+    }*/
 }

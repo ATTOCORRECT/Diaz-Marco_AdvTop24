@@ -13,10 +13,10 @@ public class Chunk : MonoBehaviour
     private TerrainData procedural_terrain;
 
     private static readonly Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
-    private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
-
-    Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
     private int chunk_grid_row, chunk_grid_slice, chunk_grid_volume;
+
+    private Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
+    private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
     private List<List<ArrayList>> cells;
 
