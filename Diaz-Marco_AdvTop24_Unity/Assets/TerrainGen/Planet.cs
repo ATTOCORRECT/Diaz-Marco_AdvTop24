@@ -29,7 +29,7 @@ public class Planet : MonoBehaviour
     {
         if (reload)
         {
-            reload = false;
+            //reload = false;
             procedural_terrain.UpdateSeed();
             ReloadChunks();
         }

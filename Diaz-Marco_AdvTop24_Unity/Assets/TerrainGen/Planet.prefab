@@ -50,30 +50,7 @@ MonoBehaviour:
   procedural_terrain:
     densityCompute: {fileID: 7200000, guid: cdb0e1333a0b48c4bb35495a73f4ed07, type: 3}
     seed: 78487998256230017
-    min_height: 16
-    max_height: 32
-    height_map:
-      serializedVersion: 2
-      m_Curve:
-      - serializedVersion: 3
-        time: 0
-        value: 0
-        inSlope: 0
-        outSlope: 1
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      - serializedVersion: 3
-        time: 1
-        value: 1
-        inSlope: 1
-        outSlope: 0
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0
-        outWeight: 0
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
+    squashingFactor: 0.1
+    midHeight: 8
+    seed_position: {x: 0, y: 0, z: 0}
   area_size: {x: 2, y: 2, z: 2}

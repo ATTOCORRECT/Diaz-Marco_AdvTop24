@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f1ff66a7ee60d54481733d757d0424b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  densityCompute: {fileID: 7200000, guid: cdb0e1333a0b48c4bb35495a73f4ed07, type: 3}
+  marchingCubesCompute: {fileID: 7200000, guid: 817472a8aa87f62479672f330e78672c, type: 3}
 --- !u!33 &2649914255528041110
 MeshFilter:
   m_ObjectHideFlags: 0

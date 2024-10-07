@@ -8,6 +8,8 @@ public class TerrainData
 {
     [SerializeField]
     private ComputeShader densityCompute;
+
+    private ComputeBuffer density_buffer;
     [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
     private long seed = 000000000000000000;
     [SerializeField]
@@ -35,13 +37,13 @@ public class TerrainData
         GenerateSeedPosition(seed);
     }
     
-    public float[] GetDensities(Vector3Int lattice_size, Vector3 position)
+    public ComputeBuffer GetDensities(Vector3Int lattice_size, Vector3 position)
     {
         // setup parameters and copy to compute buffer
         float[] densities = new float[lattice_size.x * lattice_size.y * lattice_size.z];
-        var buffer = new ComputeBuffer(densities.Length, sizeof(float));
-        buffer.SetData(densities);
-        densityCompute.SetBuffer(0, "densities", buffer);
+        density_buffer = new ComputeBuffer(densities.Length, sizeof(float));
+        density_buffer.SetData(densities);
+        densityCompute.SetBuffer(0, "densities", density_buffer);
         densityCompute.SetVector("localPosition", position);
         densityCompute.SetVector("latticeSize", (Vector3)lattice_size);
         densityCompute.SetFloat("squashingFactor", squashingFactor);
@@ -50,12 +52,15 @@ public class TerrainData
         densityCompute.Dispatch(0, 5, 5, 5);
 
         // copy calculated densities back to densities array
-        buffer.GetData(densities);
+        density_buffer.GetData(densities);
 
+        return density_buffer;
+    }
+
+    public void ReleaseBuffer()
+    {
         // release buffer from memory
-        buffer.Release();
-
-        return densities;
+        density_buffer.Release();
     }
 
     private void GenerateSeedPosition(long seed)
