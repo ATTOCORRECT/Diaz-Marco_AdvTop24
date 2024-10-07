@@ -1,6 +1,5 @@
-// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel Density
-#include "noiseSimplex.cginc"
+#include "Includes/noiseSimplex.cginc"
 
 RWStructuredBuffer<float> densities;
 int3 localPosition;
@@ -8,9 +7,11 @@ uint3 latticeSize;
 float squashingFactor;
 float midHeight;
 
-int indexFromCoord(uint x, uint y, uint z, uint3 gridSize)
+int indexFromCoord(uint x, uint y, uint z, uint3 grid_size)
 {
-    return z * gridSize.x * gridSize.y + y * gridSize.x + x;
+    return z * grid_size.x * grid_size.y +
+           y * grid_size.x +
+           x;
 }
 
 float FractalNoise3D(float3 position, int octaves, float scale)
