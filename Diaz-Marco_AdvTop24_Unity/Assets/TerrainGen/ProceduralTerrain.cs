@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 [Serializable]
@@ -10,12 +11,13 @@ public class TerrainData
     private ComputeShader densityCompute;
     private ComputeBuffer density_buffer;
 
-    [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
-    private long seed = 000000000000000000;
+    //[SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
+    //private long seed = 000000000000000000;
 
-    [Header("Volumetric Noise Settings")]
+    [Header("Noise Settings")]
 
     [SerializeField]
+    [SerializeAs("Octaves")]
     [Range(1, 16)]
     private int octaves;
 
@@ -35,7 +37,18 @@ public class TerrainData
     private float squashingFactor;
 
     [SerializeField]
-    private float midHeight;
+    private float VolumetricMidHeight;
+
+    [SerializeField]
+    private float SurfaceMinHeight;
+
+    [SerializeField]
+    private float SurfaceMaxHeight;
+
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
+    private float SurfaceInfluence;
+
 
     private Vector3 seed_position;
 
@@ -47,11 +60,11 @@ public class TerrainData
     // Terrain Gen Methods
     public void UpdateSeed()
     {
-        GenerateSeedPosition(seed);
+        //GenerateSeedPosition(seed);
     }
     public void SetSeed(long seed)
     {
-        this.seed = seed;
+        //this.seed = seed;
         GenerateSeedPosition(seed);
     }
     
@@ -69,7 +82,11 @@ public class TerrainData
         densityCompute.SetFloat("lacunarity", lacunarity);
         densityCompute.SetFloat("persistence", persistence);
         densityCompute.SetFloat("squashing_factor", squashingFactor);
-        densityCompute.SetFloat("mid_height", midHeight);
+        densityCompute.SetFloat("mid_height", VolumetricMidHeight);
+        densityCompute.SetFloat("min_height", SurfaceMinHeight);
+        densityCompute.SetFloat("max_height", SurfaceMaxHeight);
+        densityCompute.SetFloat("influence", SurfaceInfluence);
+
         // run compute shader
         densityCompute.Dispatch(0, 5, 5, 5);
 
@@ -85,7 +102,7 @@ public class TerrainData
         density_buffer.Release();
     }
 
-    private void GenerateSeedPosition(long seed)
+    private void GenerateSeedPosition(long seed) // not currently in use
     {
         for (int i = 0; i < 3; i++)
         {
@@ -94,6 +111,8 @@ public class TerrainData
         }
         seed_position += Vector3.one * 111.111f;
     }
+
+    // OLD, See density Compute
 
 /*    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
     {

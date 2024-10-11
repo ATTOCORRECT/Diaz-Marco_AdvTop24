@@ -10,6 +10,9 @@ float lacunarity;
 float persistence;
 float squashing_factor;
 float mid_height;
+float min_height;
+float max_height;
+float influence;
 
 int indexFromCoord(uint x, uint y, uint z, uint3 grid_size)
 {
@@ -41,10 +44,10 @@ float VolumetricNoise(float3 position, float octaves, float scale, float lacunar
     
     float squash = -radius * squashing_factor + mid_height * squashing_factor;
     
-    return FractalNoise3D(position, octaves, scale, lacunarity, persistence) + squash;
+    return FractalNoise3D(position, octaves, scale * 16, lacunarity, persistence) + squash;
 }
 
-float SphericalSurfaceNoise(float3 position, float octaves, float scale, float lacunarity, float persistence, float squashing_factor, float mid_height)
+float SphericalSurfaceNoise(float3 position, float octaves, float scale, float lacunarity, float persistence, float min_height, float max_height)
 { 
     float radius = length(position);
     
@@ -53,9 +56,9 @@ float SphericalSurfaceNoise(float3 position, float octaves, float scale, float l
     float noise = FractalNoise3D(sphere_position, octaves, scale, lacunarity, persistence);
     
     float t = (noise + 1) / 2.0;
-    float surface_height = lerp(18, 30, t);
+    float surface_height = lerp(min_height, max_height, t);
     
-    float density = (radius - surface_height) / (18 - 30) * 2;
+    float density = (radius - surface_height) / (min_height - max_height) * 2;
     
     return density;
 }
@@ -70,23 +73,11 @@ void Density (uint3 id : SV_DispatchThreadID)
     
     float3 position = id + local_position;
     
-    float density = SphericalSurfaceNoise(position, octaves, scale, lacunarity, persistence, squashing_factor, mid_height);
+    float SurfaceDensity = SphericalSurfaceNoise(position, octaves, scale, lacunarity, persistence, min_height, max_height);
+    float VolumetricDensity = VolumetricNoise(position, octaves, scale, lacunarity, persistence, squashing_factor, mid_height);
+    
+    float density = SurfaceDensity * influence + VolumetricDensity * (1 - influence);
     
     int index = indexFromCoord(id.x, id.y, id.z, lattice_size);
     densities[index] = density;
 }
-
-//float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
-//{
-//    float noise = Noise3D((position).normalized + seed_position / 10f, noise_scale, octaves);
-//    float t = (noise + 1) / 2f;
-//    float surface_height = Mathf.Lerp(min_height, max_height, height_map.Evaluate(t));
-//
-//    float radius = (position).magnitude;
-//
-//    float density = (radius - surface_height) / (max_height - min_height) * 2;
-//
-//    return density;
-//
-//}
-
