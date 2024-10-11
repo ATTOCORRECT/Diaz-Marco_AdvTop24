@@ -7,7 +7,7 @@ using UnityEngine;
 public class Planet : MonoBehaviour
 {
 
-    [SerializeField]
+    [SerializeField] 
     private bool reload;
     [SerializeField]
     private bool remove_and_add_chunks;
@@ -30,8 +30,14 @@ public class Planet : MonoBehaviour
         if (reload)
         {
             //reload = false;
-            procedural_terrain.UpdateSeed();
+            //procedural_terrain.UpdateSeed();
+            //if (reload_chunks_coroutine == null)
+            //{
+            //    reload_chunks_coroutine = StartCoroutine(ReloadChunks());
+            // }
             ReloadChunks();
+
+
         }
 
         if (remove_and_add_chunks)
@@ -39,17 +45,25 @@ public class Planet : MonoBehaviour
             remove_and_add_chunks = false;
             RemoveAndAddChunks();
         }
+        //awdawd
     }
 
+
+    //private Coroutine reload_chunks_coroutine = null;
     private void ReloadChunks()
     {
+        //chunks_reloading = true;
+
         Chunk[] chunk_scripts = gameObject.GetComponentsInChildren<Chunk>();
 
         foreach(Chunk chunk_script in chunk_scripts)
         {
             //chunk_script.SetChunkProceduralTerrain(ref procedural_terrain);
             chunk_script.GenerateChunk();
+
+            //yield return null;
         }
+        //reload_chunks_coroutine = null;
     }
 
     private void RemoveAndAddChunks()
@@ -60,7 +74,7 @@ public class Planet : MonoBehaviour
         for (int i = 0; i < area_volume; i++)
         {
             Vector3 position = Utils.GridPosition(i, area_size) * Chunk.GetChunkSize();
-            //position -= (Vector3)(area_size * Chunk.GetChunkSize()) / 2f; // center chunks
+            position -= (Vector3)(area_size * Chunk.GetChunkSize()) / 2f; // center chunks
 
             Object chunk = Instantiate(chunk_prefab, position, Quaternion.identity, transform); // add chunks
             Chunk chunk_script = chunk.GetComponent<Chunk>();

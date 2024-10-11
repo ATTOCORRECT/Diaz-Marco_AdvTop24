@@ -8,16 +8,34 @@ public class TerrainData
 {
     [SerializeField]
     private ComputeShader densityCompute;
-
     private ComputeBuffer density_buffer;
+
     [SerializeField] // /----\/----\/----\  must be 18 digits, 3 groups of 6.
     private long seed = 000000000000000000;
+
+    [Header("Volumetric Noise Settings")]
+
     [SerializeField]
+    [Range(1, 16)]
+    private int octaves;
+
+    [SerializeField]
+    private float scale;
+
+    [SerializeField]
+    [Range(1.0f, 10.0f)]
+    private float lacunarity;
+
+    [SerializeField]
+    [Range(0.01f, 1.0f)]
+    private float persistence;
+
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
     private float squashingFactor;
+
     [SerializeField]
     private float midHeight;
-    [SerializeField]
-    //private AnimationCurve height_map = AnimationCurve.Linear(0, 0, 1, 1);
 
     private Vector3 seed_position;
 
@@ -44,10 +62,14 @@ public class TerrainData
         density_buffer = new ComputeBuffer(densities.Length, sizeof(float));
         density_buffer.SetData(densities);
         densityCompute.SetBuffer(0, "densities", density_buffer);
-        densityCompute.SetVector("localPosition", position);
-        densityCompute.SetVector("latticeSize", (Vector3)lattice_size);
-        densityCompute.SetFloat("squashingFactor", squashingFactor);
-        densityCompute.SetFloat("midHeight", midHeight);
+        densityCompute.SetVector("local_position", position);
+        densityCompute.SetVector("lattice_size", (Vector3)lattice_size);
+        densityCompute.SetInt("octaves", octaves);
+        densityCompute.SetFloat("scale", scale);
+        densityCompute.SetFloat("lacunarity", lacunarity);
+        densityCompute.SetFloat("persistence", persistence);
+        densityCompute.SetFloat("squashing_factor", squashingFactor);
+        densityCompute.SetFloat("mid_height", midHeight);
         // run compute shader
         densityCompute.Dispatch(0, 5, 5, 5);
 
