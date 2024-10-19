@@ -1,18 +1,18 @@
 #pragma kernel Density
 #include "Includes/noiseSimplex.cginc"
 
-RWStructuredBuffer<float> densities;
+RWStructuredBuffer<float> height_map;
 float3 local_position;
 uint3 lattice_size;
 int octaves;
 float scale;
 float lacunarity;
 float persistence;
-float squashing_factor;
-float mid_height;
+//float squashing_factor;
+//float mid_height;
 float min_height;
 float max_height;
-float influence;
+//float influence;
 
 int indexFromCoord(uint x, uint y, uint z, uint3 grid_size)
 {
@@ -47,20 +47,20 @@ float VolumetricNoise(float3 position, float octaves, float scale, float lacunar
     return FractalNoise3D(position, octaves, scale * 16, lacunarity, persistence) + squash;
 }
 
-float SphericalSurfaceNoise(float3 position, float octaves, float scale, float lacunarity, float persistence, float min_height, float max_height)
+float SphericalSurfaceHeightNoise(float3 position, float octaves, float scale, float lacunarity, float persistence)
 { 
     float radius = length(position);
     
     float3 sphere_position = position / radius;
     
-    float noise = FractalNoise3D(sphere_position, octaves, scale, lacunarity, persistence);
+    return FractalNoise3D(sphere_position, octaves, scale, lacunarity, persistence);
     
-    float t = (noise + 1) / 2.0;
-    float surface_height = lerp(min_height, max_height, t);
+    //float t = (noise + 1) / 2.0;
+    //float surface_height = lerp(min_height, max_height, t);
     
-    float density = (radius - surface_height) / (min_height - max_height) * 2;
+    //float density = (radius - surface_height) / (min_height - max_height) * 2;
     
-    return density;
+    //return density;
 }
 
 [numthreads(8, 8, 8)]
@@ -73,11 +73,12 @@ void Density (uint3 id : SV_DispatchThreadID)
     
     float3 position = id + local_position;
     
-    float SurfaceDensity = SphericalSurfaceNoise(position, octaves, scale, lacunarity, persistence, min_height, max_height);
-    float VolumetricDensity = VolumetricNoise(position, octaves, scale, lacunarity, persistence, squashing_factor, mid_height);
+    //float VolumetricDensity = VolumetricNoise(position, octaves, scale, lacunarity, persistence, squashing_factor, mid_height);
     
-    float density = SurfaceDensity * influence + VolumetricDensity * (1 - influence);
+    //float density = SurfaceDensity * influence + VolumetricDensity * (1 - influence);
     
     int index = indexFromCoord(id.x, id.y, id.z, lattice_size);
-    densities[index] = density;
+    height_map[index] = SphericalSurfaceHeightNoise(position, octaves, scale, lacunarity, persistence);
+    
+    // 2, 4, 2, 0.5);
 }

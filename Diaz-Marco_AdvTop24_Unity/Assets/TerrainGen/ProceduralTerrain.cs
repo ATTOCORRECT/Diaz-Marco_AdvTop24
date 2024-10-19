@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [Serializable]
 public class TerrainData
@@ -16,28 +17,37 @@ public class TerrainData
 
     [Header("Noise Settings")]
 
-    [SerializeField]
-    [SerializeAs("Octaves")]
+/*    [SerializeField]
     [Range(1, 16)]
-    private int octaves;
+    private int octaves;*/
 
-    [SerializeField]
-    private float scale;
+/*    [SerializeField]
+    private float scale;*/
 
-    [SerializeField]
+/*    [SerializeField]
     [Range(1.0f, 10.0f)]
-    private float lacunarity;
+    private float lacunarity;*/
 
-    [SerializeField]
+/*    [SerializeField]
     [Range(0.01f, 1.0f)]
-    private float persistence;
+    private float persistence;*/
 
-    [SerializeField]
+/*    [SerializeField]
     [Range(0.0f, 1.0f)]
-    private float squashingFactor;
+    private float squashingFactor;*/
+
+/*    [SerializeField]
+    private float VolumetricMidHeight;*/
 
     [SerializeField]
-    private float VolumetricMidHeight;
+    private AnimationCurve PeaksAndValleys;
+
+    [SerializeField]
+    private AnimationCurve Continentalness;
+
+    [SerializeField]
+    private AnimationCurve Erosion;
+
 
     [SerializeField]
     private float SurfaceMinHeight;
@@ -45,9 +55,9 @@ public class TerrainData
     [SerializeField]
     private float SurfaceMaxHeight;
 
-    [SerializeField]
+/*    [SerializeField]
     [Range(0.0f, 1.0f)]
-    private float SurfaceInfluence;
+    private float SurfaceInfluence;*/
 
 
     private Vector3 seed_position;
@@ -68,38 +78,66 @@ public class TerrainData
         GenerateSeedPosition(seed);
     }
     
-    public ComputeBuffer GetDensities(Vector3Int lattice_size, Vector3 position)
+    public float[] GetDensities(Vector3Int lattice_size, Vector3 position)
+    {
+
+        float[] peaks_and_valleys_noise = generateNoise(lattice_size, position, 2, 2, 2, 0.5f);
+
+        float[] continentalness_noise = generateNoise(lattice_size, position, 4, 1, 2, 0.5f);
+
+        float[] erosion_noise = generateNoise(lattice_size, position, 4, 4, 2, 0.5f);
+
+        float[] densities = new float[lattice_size.x * lattice_size.y * lattice_size.z];
+
+        for (int i = 0; i < (lattice_size.x * lattice_size.y * lattice_size.z); i++)
+        {
+            Vector3Int cell_position = Utils.GridPosition(i, lattice_size);
+
+            float radius = (cell_position + position).magnitude;
+
+            float t = 0;
+
+            t += PeaksAndValleys.Evaluate((peaks_and_valleys_noise[i] + 1) / 2f) * Erosion.Evaluate((erosion_noise[i] + 1) / 2f) * 0.5f;
+
+            t += Continentalness.Evaluate((continentalness_noise[i] + 1) / 2f) * 0.5f;
+
+            float surface_height = Mathf.Lerp(SurfaceMinHeight, SurfaceMaxHeight, t);
+
+            densities[i] = (radius - surface_height) / (SurfaceMinHeight - SurfaceMaxHeight) * 2;
+        }
+
+        return densities;
+    }
+
+    public float[] generateNoise(Vector3Int lattice_size, Vector3 position, int octaves, float scale, float lacunarity, float persistence)
     {
         // setup parameters and copy to compute buffer
-        float[] densities = new float[lattice_size.x * lattice_size.y * lattice_size.z];
-        density_buffer = new ComputeBuffer(densities.Length, sizeof(float));
-        density_buffer.SetData(densities);
-        densityCompute.SetBuffer(0, "densities", density_buffer);
+        float[] noise = new float[lattice_size.x * lattice_size.y * lattice_size.z];
+        density_buffer = new ComputeBuffer(noise.Length, sizeof(float));
+        density_buffer.SetData(noise);
+        densityCompute.SetBuffer(0, "height_map", density_buffer);
         densityCompute.SetVector("local_position", position);
         densityCompute.SetVector("lattice_size", (Vector3)lattice_size);
         densityCompute.SetInt("octaves", octaves);
         densityCompute.SetFloat("scale", scale);
         densityCompute.SetFloat("lacunarity", lacunarity);
         densityCompute.SetFloat("persistence", persistence);
-        densityCompute.SetFloat("squashing_factor", squashingFactor);
-        densityCompute.SetFloat("mid_height", VolumetricMidHeight);
+        //densityCompute.SetFloat("squashing_factor", squashingFactor);
+        //densityCompute.SetFloat("mid_height", VolumetricMidHeight);
         densityCompute.SetFloat("min_height", SurfaceMinHeight);
         densityCompute.SetFloat("max_height", SurfaceMaxHeight);
-        densityCompute.SetFloat("influence", SurfaceInfluence);
+        //densityCompute.SetFloat("influence", SurfaceInfluence);
 
         // run compute shader
         densityCompute.Dispatch(0, 5, 5, 5);
 
         // copy calculated densities back to densities array
-        density_buffer.GetData(densities);
+        density_buffer.GetData(noise);
 
-        return density_buffer;
-    }
-
-    public void ReleaseBuffer()
-    {
         // release buffer from memory
         density_buffer.Release();
+
+        return noise;
     }
 
     private void GenerateSeedPosition(long seed) // not currently in use
@@ -111,92 +149,4 @@ public class TerrainData
         }
         seed_position += Vector3.one * 111.111f;
     }
-
-    // OLD, See density Compute
-
-/*    private float SphereSurfaceNoise(Vector3 position, float min_height, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain on the surface of a sphere
-    {
-        float noise = Noise3D((position).normalized + seed_position / 10f, noise_scale, octaves);
-        float t = (noise + 1) / 2f;
-        float surface_height = Mathf.Lerp(min_height, max_height, height_map.Evaluate(t));
-
-        float radius = (position).magnitude;
-
-        float density = (radius - surface_height) / (max_height - min_height) * 2;
-
-        return density;
-
-    }
-
-    private float SurfaceNoise(Vector3 position, float max_height, float noise_scale, int octaves) // noise for flat hilly terrain [deprecated]
-    {
-        float noise = Noise2D(new Vector2(position.x, position.z), noise_scale, octaves);
-        float t = (noise + 1) / 2f;
-        float surfaceHeight = Mathf.Lerp(0, max_height, t);
-
-        return (position.y - surfaceHeight) / ((max_height / 2f) * 1 / 0.5f);
-    }
-
-    private float Noise2D(Vector2 position, float noise_scale, int octaves)
-    {
-        position *= 1 / noise_scale; // scale noise
-
-        float noiseSum = 0;
-        float amplitude = 1;
-        float frequency = 1;
-        for (int i = 0; i < octaves; i++) // add together octaves to make fractal noise
-        {
-            noiseSum += PerlinNoise2D(position * frequency) * amplitude;
-
-            frequency *= 2;
-
-            amplitude *= 0.5f;
-        }
-
-        return Mathf.Clamp(noiseSum, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
-    }
-
-    private float PerlinNoise2D(Vector2 position)
-    {
-        return Mathf.PerlinNoise(position.x, position.y) * 2 - 1; // returns 2D perlin scaled to a range of -1 to 1
-    }
-
-    private float Noise3D(Vector3 position, float noise_scale, int octaves)
-    {
-        position *= 1 / noise_scale; // scale noise
-
-        float noise = 0;
-        for (int i = 0; i < octaves; i++) // add together octaves to make fractal noise
-        {
-            noise += PerlinNoise3D(position * Mathf.Pow(2, i + 1)) / Mathf.Pow(2, i + 1);
-        }
-
-        return Mathf.Clamp(noise, -1, 1); // clamp just incase, although it shouldnt go beyond these bounds regardless
-    }
-
-    private float PerlinNoise3D(Vector3 position)
-    {
-        // https://discussions.unity.com/t/3d-perlin-noise/134957
-
-        float x = position.x;
-        float y = position.y;
-        float z = position.z;
-
-        x += 10000; // prevent mirroring along x, i have no idea why it does
-        y += 1;
-        z += 2;
-        float xy = perlin3DFixed(x, y);
-        float xz = perlin3DFixed(x, z);
-        float yz = perlin3DFixed(y, z);
-        float yx = perlin3DFixed(y, x);
-        float zx = perlin3DFixed(z, x);
-        float zy = perlin3DFixed(z, y);
-
-        return ((xy * xz * yz * yx * zx * zy) * 2 - 1);
-    }
-
-    private float perlin3DFixed(float a, float b)
-    {
-        return Mathf.Sin(Mathf.PI * Mathf.PerlinNoise(a, b));
-    }*/
 }

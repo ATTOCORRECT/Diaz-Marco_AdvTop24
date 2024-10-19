@@ -89,7 +89,9 @@ public class Chunk : MonoBehaviour
 
         densities_buffer = new ComputeBuffer(chunk_lattice_volume, sizeof(float));
 
-        densities_buffer = procedural_terrain.GetDensities(chunk_lattice_size, transform.localPosition);
+        float[] densities = procedural_terrain.GetDensities(chunk_lattice_size, transform.localPosition);
+
+        densities_buffer.SetData(densities);
 
         triangle_buffer.SetCounterValue(0);
         marchingCubesCompute.SetBuffer(0, "densities", densities_buffer);
@@ -133,7 +135,6 @@ public class Chunk : MonoBehaviour
         triangle_buffer.Release();
         triangle_count_buffer.Release();
         densities_buffer.Release();
-        procedural_terrain.ReleaseBuffer();
     }
 
     struct Triangle
