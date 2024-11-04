@@ -20,7 +20,6 @@ public class Chunk : MonoBehaviour
     private TerrainData procedural_terrain;
 
     private static readonly Vector3Int chunk_grid_size = new Vector3Int(32, 32, 32); // dimensions of a chunk in meters
-    private int chunk_grid_row, chunk_grid_slice, chunk_grid_volume;
 
     private Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
     private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
@@ -52,7 +51,6 @@ public class Chunk : MonoBehaviour
             gameObject.GetComponent<MeshFilter>().sharedMesh = mesh;
 
             Utils.GetGridParts(chunk_lattice_size, out chunk_lattice_row, out chunk_lattice_slice, out chunk_lattice_volume);
-            Utils.GetGridParts(chunk_grid_size, out chunk_grid_row, out chunk_grid_slice, out chunk_grid_volume);
         }
 
         GenerateMesh();
@@ -82,7 +80,7 @@ public class Chunk : MonoBehaviour
     {
 
         // setup parameters and copy to compute buffer
-        int max_triangle_count = chunk_grid_volume * 5;
+        int max_triangle_count = (chunk_grid_size.x * chunk_grid_size.y * chunk_grid_size.z) * 5;
         triangle_buffer = new ComputeBuffer(max_triangle_count, sizeof(float) * 3 * 3, ComputeBufferType.Append);
 
         triangle_count_buffer = new ComputeBuffer(1, sizeof(int), ComputeBufferType.Raw);

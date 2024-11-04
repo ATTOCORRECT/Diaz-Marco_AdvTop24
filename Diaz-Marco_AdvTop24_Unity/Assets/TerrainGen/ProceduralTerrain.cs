@@ -17,28 +17,6 @@ public class TerrainData
 
     [Header("Noise Settings")]
 
-/*    [SerializeField]
-    [Range(1, 16)]
-    private int octaves;*/
-
-/*    [SerializeField]
-    private float scale;*/
-
-/*    [SerializeField]
-    [Range(1.0f, 10.0f)]
-    private float lacunarity;*/
-
-/*    [SerializeField]
-    [Range(0.01f, 1.0f)]
-    private float persistence;*/
-
-/*    [SerializeField]
-    [Range(0.0f, 1.0f)]
-    private float squashingFactor;*/
-
-/*    [SerializeField]
-    private float VolumetricMidHeight;*/
-
     [SerializeField]
     private AnimationCurve PeaksAndValleys;
 
@@ -48,16 +26,14 @@ public class TerrainData
     [SerializeField]
     private AnimationCurve Erosion;
 
-
     [SerializeField]
     private float SurfaceMinHeight;
 
     [SerializeField]
     private float SurfaceMaxHeight;
 
-/*    [SerializeField]
-    [Range(0.0f, 1.0f)]
-    private float SurfaceInfluence;*/
+    [SerializeField]
+    private float Scale;
 
 
     private Vector3 seed_position;
@@ -80,12 +56,11 @@ public class TerrainData
     
     public float[] GetDensities(Vector3Int lattice_size, Vector3 position)
     {
+        float[] peaks_and_valleys_noise = generateNoise(lattice_size, position, 2, 2 * Scale, 2, 0.5f);
 
-        float[] peaks_and_valleys_noise = generateNoise(lattice_size, position, 2, 2, 2, 0.5f);
+        float[] continentalness_noise = generateNoise(lattice_size, position, 4, 1 * Scale, 2, 0.5f);
 
-        float[] continentalness_noise = generateNoise(lattice_size, position, 4, 1, 2, 0.5f);
-
-        float[] erosion_noise = generateNoise(lattice_size, position, 4, 4, 2, 0.5f);
+        float[] erosion_noise = generateNoise(lattice_size, position, 2, 1 * Scale, 2, 0.5f);
 
         float[] densities = new float[lattice_size.x * lattice_size.y * lattice_size.z];
 
@@ -97,9 +72,16 @@ public class TerrainData
 
             float t = 0;
 
-            t += PeaksAndValleys.Evaluate((peaks_and_valleys_noise[i] + 1) / 2f) * Erosion.Evaluate((erosion_noise[i] + 1) / 2f) * 0.5f;
+            float peaks_and_valleys_height = PeaksAndValleys.Evaluate((peaks_and_valleys_noise[i] + 1) / 2f);
 
-            t += Continentalness.Evaluate((continentalness_noise[i] + 1) / 2f) * 0.5f;
+            float continentalness_height = Continentalness.Evaluate((continentalness_noise[i] + 1) / 2f);
+
+            float erosion_factor = Erosion.Evaluate((erosion_noise[i] + 1) / 2f);
+
+
+            t += ((peaks_and_valleys_height * 2 - 1) * erosion_factor + 1) / 2 * 0.5f;
+
+            t += ((continentalness_height * 2 - 1) * Mathf.Lerp(erosion_factor, 1, 0.1f) + 1) / 2 * 0.5f;
 
             float surface_height = Mathf.Lerp(SurfaceMinHeight, SurfaceMaxHeight, t);
 
