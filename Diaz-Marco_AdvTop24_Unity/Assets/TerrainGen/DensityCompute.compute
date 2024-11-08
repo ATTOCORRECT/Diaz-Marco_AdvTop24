@@ -51,6 +51,11 @@ float SphericalSurfaceHeightNoise(float3 position, float octaves, float scale, f
 { 
     float radius = length(position);
     
+    if (radius < 0.01)
+    {
+        radius = 0.01;
+    }
+    
     float3 sphere_position = position / radius;
     
     return FractalNoise3D(sphere_position, octaves, scale, lacunarity, persistence);

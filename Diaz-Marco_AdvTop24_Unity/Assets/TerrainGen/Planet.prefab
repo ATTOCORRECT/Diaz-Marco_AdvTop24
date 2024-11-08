@@ -44,10 +44,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a90b73a7781afc41b652e08306f4a96, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reload: 0
-  remove_and_add_chunks: 0
   chunk_prefab: {fileID: 8508575764947072853, guid: 394ac7af6291ee94bbe0338ab1f826a5,
     type: 3}
+  OceanMaterial: {fileID: 2100000, guid: 2929b6d9322865d43bdbff7202c7bd79, type: 2}
   procedural_terrain:
     densityCompute: {fileID: 7200000, guid: cdb0e1333a0b48c4bb35495a73f4ed07, type: 3}
     PeaksAndValleys:
@@ -252,3 +251,4 @@ MonoBehaviour:
     SurfaceMaxHeight: 24
     Scale: 1
   area_size: {x: 2, y: 2, z: 2}
+  DensityMap: {fileID: 0}

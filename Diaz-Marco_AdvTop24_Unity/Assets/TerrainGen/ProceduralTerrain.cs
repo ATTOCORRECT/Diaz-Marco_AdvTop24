@@ -110,8 +110,15 @@ public class TerrainData
         densityCompute.SetFloat("max_height", SurfaceMaxHeight);
         //densityCompute.SetFloat("influence", SurfaceInfluence);
 
+        // get the dispatch size (how many instances ill dispatch simultaniously)
+        Vector3Int dispatch_size = Vector3Int.zero;
+
+        dispatch_size.x = (int)Mathf.Ceil(lattice_size.x / 8f); // each have a size of 8x8x8 so i divide my space by 8 rounded up to get the number in that dimension
+        dispatch_size.y = (int)Mathf.Ceil(lattice_size.y / 8f);
+        dispatch_size.z = (int)Mathf.Ceil(lattice_size.z / 8f);
+
         // run compute shader
-        densityCompute.Dispatch(0, 5, 5, 5);
+        densityCompute.Dispatch(0, dispatch_size.x, dispatch_size.y, dispatch_size.z);
 
         // copy calculated densities back to densities array
         density_buffer.GetData(noise);
@@ -121,6 +128,8 @@ public class TerrainData
 
         return noise;
     }
+
+
 
     private void GenerateSeedPosition(long seed) // not currently in use
     {

@@ -3,67 +3,76 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-[ExecuteInEditMode]
+//[ExecuteInEditMode]
 public class Planet : MonoBehaviour
 {
-
-    [SerializeField] 
-    private bool reload;
-    [SerializeField]
-    private bool remove_and_add_chunks;
     [SerializeField]
     private Object chunk_prefab;
+
+    [SerializeField]
+    private Material OceanMaterial;
+
     [SerializeField]
     TerrainData procedural_terrain;
+
     [SerializeField]
     private Vector3Int area_size;
-    
 
-    void Awake()
+    [SerializeField]
+    private Texture3D DensityMap;
+
+    void Start()
     {
-       // procedural_terrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
+        // procedural_terrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
+        GenerateDensityMap();
+        SetupMaterials();
         RemoveAndAddChunks();
     }
 
     private void Update()
     {
-        if (reload)
-        {
-            reload = false;
-            //procedural_terrain.UpdateSeed();
-            //if (reload_chunks_coroutine == null)
-            //{
-            //    reload_chunks_coroutine = StartCoroutine(ReloadChunks());
-            // }
-            ReloadChunks();
 
-
-        }
-
-        if (remove_and_add_chunks)
-        {
-            remove_and_add_chunks = false;
-            RemoveAndAddChunks();
-        }
-        //awdawd
     }
 
+    private void GenerateDensityMap()
+    {
+        Vector3Int lattice_size = (Chunk.GetChunkSize() * area_size) + Vector3Int.one;
 
-    //private Coroutine reload_chunks_coroutine = null;
+        Vector3Int corner = -(area_size * Chunk.GetChunkSize() / 2);
+
+        DensityMap = new Texture3D(lattice_size.x, lattice_size.y, lattice_size.z, TextureFormat.R8, 0);
+
+        float[] densities = procedural_terrain.GetDensities(lattice_size, corner);
+
+        Utils.GetGridParts(lattice_size, out int lattice_volume);
+
+        for (int i = 0; i < lattice_volume; i++)
+        {
+            Vector3Int position = Utils.GridPosition(i, lattice_size);
+
+            float density = Mathf.Clamp01((densities[i] + 1) / 2f);
+
+            Color color = new Color(density, 0, 0);
+
+            DensityMap.SetPixel(position.x, position.y, position.z, color);
+        }
+
+        DensityMap.Apply();
+    }
+
+    private void SetupMaterials()
+    {
+        OceanMaterial.SetTexture("_Density_Map", DensityMap);
+    }
+
     private void ReloadChunks()
     {
-        //chunks_reloading = true;
-
         Chunk[] chunk_scripts = gameObject.GetComponentsInChildren<Chunk>();
 
         foreach(Chunk chunk_script in chunk_scripts)
         {
-            //chunk_script.SetChunkProceduralTerrain(ref procedural_terrain);
             chunk_script.GenerateChunk();
-
-            //yield return null;
         }
-        //reload_chunks_coroutine = null;
     }
 
     private void RemoveAndAddChunks()
@@ -71,6 +80,7 @@ public class Planet : MonoBehaviour
         ClearChildren();
 
         Utils.GetGridParts(area_size, out int area_volume);
+
         for (int i = 0; i < area_volume; i++)
         {
             Vector3 position = Utils.GridPosition(i, area_size) * Chunk.GetChunkSize();

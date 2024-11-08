@@ -24,6 +24,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _Density_Map:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _SampleTexture2D_4248a52626b64e4a9f403133983a3b9c_Texture_1_Texture2D:
         m_Texture: {fileID: 2800000, guid: c5fea72bc5657c2419e186e1c3245dc5, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -59,8 +63,13 @@ Material:
     m_Ints: []
     m_Floats:
     - _Color_Depth_Factor: 1
+    - _Foam_Lap_Speed: 1
+    - _Foam_Range: 0.5
+    - _Foam_Strength: 0.25
     - _Fresnel_Power: 0.5
     - _Minimum_Fresnel_Alpha: 0.8
+    - _Planet_Maximum_Radius: 64.5
+    - _Planet_Size: 128
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Shore_Fade_Strength: 0.2
