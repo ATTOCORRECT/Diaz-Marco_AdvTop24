@@ -64,6 +64,7 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Shore_Fade_Strength: 0.2
+    - _Wave_Thickness: 0.25
     m_Colors:
     - _Color: {r: 0, g: 0.25423968, b: 0.8396226, a: 0}
     - _Deep_Color: {r: 0.027233878, g: 0.26337305, b: 0.6415094, a: 0}
