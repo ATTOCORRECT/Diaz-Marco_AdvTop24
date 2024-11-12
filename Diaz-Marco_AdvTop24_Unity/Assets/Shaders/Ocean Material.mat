@@ -19,7 +19,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 3000
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -92,8 +92,8 @@ Material:
     - _ZWriteControl: 2
     m_Colors:
     - _Color: {r: 0, g: 0.25423968, b: 0.8396226, a: 0}
-    - _Deep_Color: {r: 0.027233878, g: 0.26337305, b: 0.6415094, a: 0}
-    - _Shallow_Color: {r: 0.08116765, g: 0.7610292, b: 0.9056604, a: 0}
+    - _Deep_Color: {r: 0, g: 0.4117647, b: 0.6666667, a: 0}
+    - _Shallow_Color: {r: 0.047058824, g: 0.94509804, b: 1, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &524342450407775727
 MonoBehaviour:

@@ -27,14 +27,21 @@ public class TerrainData
     private AnimationCurve Erosion;
 
     [SerializeField]
-    private float SurfaceMinHeight;
+    public float SurfaceMinHeight;
 
     [SerializeField]
-    private float SurfaceMaxHeight;
+    public float SeaLevel;
+
+    [SerializeField]
+    public float SurfaceMaxHeight;
 
     [SerializeField]
     private float Scale;
 
+    [Header("Surface Coloring Settings")]
+
+    [SerializeField]
+    public Texture2D SurfaceColorMap;
 
     private Vector3 seed_position;
 

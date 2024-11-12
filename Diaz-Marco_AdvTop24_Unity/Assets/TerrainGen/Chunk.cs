@@ -24,20 +24,10 @@ public class Chunk : MonoBehaviour
     private Vector3Int chunk_lattice_size; // the lattice of the chunk grid (think fence posts vs fences)
     private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
-    private List<List<ArrayList>> cells;
-
-    private float[] densities;
-
     private Mesh mesh;
 
 
     // -----
-
-    // Update is called once per frame
-    void Update()
-    {
-        Utils.DrawCube(transform.position, chunk_grid_size, Color.white);
-    }
 
     public void GenerateChunk()
     {
@@ -68,12 +58,8 @@ public class Chunk : MonoBehaviour
 
     private void GenerateMesh()
     {
-       
-
         MarchingCubes();
-
-        
-        //mesh_renderer.material = mesh_material;
+        // there used to be more here
     }
 
     private void MarchingCubes()
@@ -109,23 +95,55 @@ public class Chunk : MonoBehaviour
         Triangle[] triangles = new Triangle[max_triangle_count];
         triangle_buffer.GetData(triangles, 0, 0, number_of_triangles);
 
-        Vector3[] vertices = new Vector3[number_of_triangles * 3];
-        int[] mesh_triangles = new int[number_of_triangles * 3];
+        // Setup arrays for population
+        int number_of_vertices = number_of_triangles * 3;
 
-        for (int i = 0; i < number_of_triangles; i++)
+        Vector3[] vertices = new Vector3[number_of_vertices];
+        int[] mesh_triangles = new int[number_of_vertices];
+        Color[] vertex_colors = new Color[number_of_vertices];
+
+        
+        for (int i = 0; i < number_of_triangles; i++) // all triangles
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < 3; j++) // all 3 vertices within a triangle
             {
                 mesh_triangles[i * 3 + j] = i * 3 + j;
+                /* sets it equal to its index. i have no shared verticies
+                since unity doesnt have split normals (that i know of)) */
+
                 vertices[i * 3 + j] = triangles[i][j];
             }
+
+            Vector3 Vertex0 = vertices[i * 3 + 0];
+            Vector3 Vertex1 = vertices[i * 3 + 1];
+            Vector3 Vertex2 = vertices[i * 3 + 2];
+
+            Vector3 triangle_position = (Vertex0 + Vertex1 + Vertex2) * (1f / 3f); // average position of all 3 vertices
+
+            Vector3 triangle_world_position = transform.TransformPoint(triangle_position);
+            Vector3 triangle_planet_position = transform.parent.InverseTransformPoint(triangle_world_position);
+
+            Vector3 normal = Vector3.Cross(Vertex1 - Vertex0, Vertex2 - Vertex0).normalized;
+            float steepness = 1 - Mathf.Clamp01(Vector3.Dot(normal, triangle_planet_position.normalized) * 2 - 1);
+
+            float height = Mathf.Clamp01(Utils.Remap(triangle_planet_position.magnitude, procedural_terrain.SeaLevel, procedural_terrain.SurfaceMaxHeight, 0, 1));
+
+            Color color = procedural_terrain.SurfaceColorMap.GetPixelBilinear(steepness, height);
+            color = new Color(Mathf.Pow(color.r, 2.2f),
+                              Mathf.Pow(color.g, 2.2f),
+                              Mathf.Pow(color.b, 2.2f));
+
+            vertex_colors[i * 3 + 0] = color;
+            vertex_colors[i * 3 + 1] = color;
+            vertex_colors[i * 3 + 2] = color;
         }
 
         // update mesh with triangle data
-        mesh.Clear();
+        mesh.Clear(); // clear mesh for regeneration
 
         mesh.vertices = vertices;
         mesh.triangles = mesh_triangles;
+        mesh.colors = vertex_colors;
 
         mesh.RecalculateNormals();
 

@@ -24,14 +24,20 @@ public class Planet : MonoBehaviour
     void Start()
     {
         // procedural_terrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
-        GenerateDensityMap();
-        SetupMaterials();
-        RemoveAndAddChunks();
+        GeneratePlanet();
     }
 
     private void Update()
     {
 
+    }
+
+    [ContextMenu("GeneratePlanet")]
+    private void GeneratePlanet()
+    {
+        GenerateDensityMap();
+        SetupMaterials();
+        RemoveAndAddChunks();
     }
 
     private void GenerateDensityMap()
@@ -75,7 +81,7 @@ public class Planet : MonoBehaviour
         }
     }
 
-    private void RemoveAndAddChunks()
+    private void RemoveAndAddChunks() 
     {
         ClearChildren();
 

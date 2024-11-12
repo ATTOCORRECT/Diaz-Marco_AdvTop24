@@ -4,6 +4,13 @@ using UnityEngine;
 
 public static class Utils
 {
+    public static float Remap(float input, float low1, float high1, float low2, float high2)
+    {
+        //c+(x-a)*(d-c)/(b-a)
+
+        return low2 + (input - low1) * (high2 - low2) / (high1 - low1);
+    }
+
     public static Vector3Int GridPosition(int index, Vector3Int grid_size) // from an index get a position in a grid
     {
         int x =  index                                % grid_size.x;
