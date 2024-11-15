@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Ocean Material
+  m_Name: Earthlike Ocean Material
   m_Shader: {fileID: -6465566751694194690, guid: eafb84eace6a3a540870a7bde8e4bb33,
     type: 3}
   m_Parent: {fileID: 0}
@@ -72,6 +72,7 @@ Material:
     - _Color_Depth_Factor: 1
     - _Cull: 0
     - _DstBlend: 10
+    - _Flatness: 0
     - _Foam_Lap_Speed: 1
     - _Foam_Range: 0.5
     - _Foam_Strength: 0.16
@@ -83,8 +84,13 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Shore_Fade_Strength: 0.2
+    - _Shore_Wave_Frequency: 8
+    - _Shore_Wave_Range: 0.2
+    - _Shore_Wave_Speed: 1
+    - _Shore_Wave_Thickness: 0.25
     - _SrcBlend: 1
     - _Surface: 1
+    - _Wave_Speed: 0.25
     - _Wave_Thickness: 0.25
     - _WorkflowMode: 1
     - _ZTest: 4
@@ -93,6 +99,7 @@ Material:
     m_Colors:
     - _Color: {r: 0, g: 0.25423968, b: 0.8396226, a: 0}
     - _Deep_Color: {r: 0, g: 0.4117647, b: 0.6666667, a: 0}
+    - _Foam_Color: {r: 1, g: 1, b: 1, a: 1}
     - _Shallow_Color: {r: 0.047058824, g: 0.94509804, b: 1, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &524342450407775727

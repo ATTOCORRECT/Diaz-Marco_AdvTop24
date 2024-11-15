@@ -38,11 +38,6 @@ public class TerrainData
     [SerializeField]
     private float Scale;
 
-    [Header("Surface Coloring Settings")]
-
-    [SerializeField]
-    public Texture2D SurfaceColorMap;
-
     private Vector3 seed_position;
 
     public TerrainData(long seed)

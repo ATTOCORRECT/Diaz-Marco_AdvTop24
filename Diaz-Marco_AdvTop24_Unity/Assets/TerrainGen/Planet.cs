@@ -3,33 +3,53 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-//[ExecuteInEditMode]
+[ExecuteInEditMode]
 public class Planet : MonoBehaviour
 {
     [SerializeField]
-    private Object chunk_prefab;
+    bool reload;
+
+    [SerializeField]
+    private Object ChunkPrefab;
+
+    [SerializeField]
+    private Object OceanSphere;
+
+    [SerializeField]
+    private Material LandMaterial;
 
     [SerializeField]
     private Material OceanMaterial;
 
     [SerializeField]
-    TerrainData procedural_terrain;
+    TerrainData ProceduralTerrain;
 
     [SerializeField]
-    private Vector3Int area_size;
+    private Vector3Int AreaSize;
 
     [SerializeField]
     private Texture3D DensityMap;
 
-    void Start()
+    private void Awake()
     {
-        // procedural_terrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
+        ResetDensityMap();
+        SetupMaterials();
+        ConfigureOcean();
+        RemoveAndAddChunks();
+    }
+
+    private void Start()
+    {
+        // ProceduralTerrain = new TerrainData(Random.Range(0,1000000) + Random.Range(0, 1000000) * 1000000 + Random.Range(0, 1000000) * 1000000000000);
         GeneratePlanet();
     }
 
     private void Update()
     {
-
+        if (reload)
+        {
+            FastReload();
+        }
     }
 
     [ContextMenu("GeneratePlanet")]
@@ -37,18 +57,24 @@ public class Planet : MonoBehaviour
     {
         GenerateDensityMap();
         SetupMaterials();
+        ConfigureOcean();
         RemoveAndAddChunks();
+    }
+    private void FastReload()
+    {
+        ConfigureOcean();
+        ReloadChunks();
     }
 
     private void GenerateDensityMap()
     {
-        Vector3Int lattice_size = (Chunk.GetChunkSize() * area_size) + Vector3Int.one;
+        Vector3Int lattice_size = (Chunk.GetChunkSize() * AreaSize) + Vector3Int.one;
 
-        Vector3Int corner = -(area_size * Chunk.GetChunkSize() / 2);
+        Vector3Int corner = -(AreaSize * Chunk.GetChunkSize() / 2);
 
         DensityMap = new Texture3D(lattice_size.x, lattice_size.y, lattice_size.z, TextureFormat.R8, 0);
 
-        float[] densities = procedural_terrain.GetDensities(lattice_size, corner);
+        float[] densities = ProceduralTerrain.GetDensities(lattice_size, corner);
 
         Utils.GetGridParts(lattice_size, out int lattice_volume);
 
@@ -64,11 +90,27 @@ public class Planet : MonoBehaviour
         }
 
         DensityMap.Apply();
+
+        OceanMaterial.SetTexture("_Density_Map", DensityMap);
+    }
+
+    private void ResetDensityMap()
+    {
+        Vector3Int lattice_size = (Chunk.GetChunkSize() * AreaSize) + Vector3Int.one;
+        DensityMap = new Texture3D(lattice_size.x, lattice_size.y, lattice_size.z, TextureFormat.R8, 0);
+        OceanMaterial.SetTexture("_Density_Map", DensityMap);
     }
 
     private void SetupMaterials()
     {
-        OceanMaterial.SetTexture("_Density_Map", DensityMap);
+        OceanSphere.GetComponent<MeshRenderer>().material = OceanMaterial;
+    }
+
+    private void ConfigureOcean()
+    {
+        float scale = ProceduralTerrain.SeaLevel;
+        OceanSphere.GetComponent<Transform>().localScale = new Vector3(scale, scale, scale);
+        OceanMaterial.SetFloat("_Planet_Size", AreaSize.x * Chunk.GetChunkSize().x);
     }
 
     private void ReloadChunks()
@@ -85,17 +127,18 @@ public class Planet : MonoBehaviour
     {
         ClearChildren();
 
-        Utils.GetGridParts(area_size, out int area_volume);
+        Utils.GetGridParts(AreaSize, out int area_volume);
 
         for (int i = 0; i < area_volume; i++)
         {
-            Vector3 position = Utils.GridPosition(i, area_size) * Chunk.GetChunkSize();
-            position -= (Vector3)(area_size * Chunk.GetChunkSize()) / 2f; // center chunks
+            Vector3 position = Utils.GridPosition(i, AreaSize) * Chunk.GetChunkSize();
+            position -= (Vector3)(AreaSize * Chunk.GetChunkSize()) / 2f; // center chunks
 
-            Object chunk = Instantiate(chunk_prefab, position, Quaternion.identity, transform); // add chunks
+            Object chunk = Instantiate(ChunkPrefab, position, Quaternion.identity, transform); // add chunks
             Chunk chunk_script = chunk.GetComponent<Chunk>();
 
-            chunk_script.SetChunkProceduralTerrain(ref procedural_terrain);
+            chunk_script.SetChunkProceduralTerrain(ref ProceduralTerrain);
+            chunk_script.SetChunkMaterial(LandMaterial);
             chunk_script.GenerateChunk();
         }
     }
@@ -117,7 +160,8 @@ public class Planet : MonoBehaviour
         //Now destroy them
         foreach (GameObject child in allChildren)
         {
-            DestroyImmediate(child.gameObject);
+            //make sure not to delete the ocean
+            if (child != OceanSphere) DestroyImmediate(child.gameObject);
         }
     }
 }

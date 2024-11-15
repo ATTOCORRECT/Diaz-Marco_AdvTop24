@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 [ExecuteInEditMode]
 public class Chunk : MonoBehaviour
 {
-    // Chunk Variables
+    // Chunk Mesh Generation Variables
     [SerializeField]
     private ComputeShader marchingCubesCompute;
 
@@ -25,9 +25,11 @@ public class Chunk : MonoBehaviour
     private int chunk_lattice_row, chunk_lattice_slice, chunk_lattice_volume; // shorthands for components of the grid
 
     private Mesh mesh;
-
-
     // -----
+
+    // Chunk Material Variables
+    private Material chunk_material;
+    private Texture2D surface_color_map;
 
     public void GenerateChunk()
     {
@@ -49,6 +51,11 @@ public class Chunk : MonoBehaviour
     public void SetChunkProceduralTerrain(ref TerrainData procedural_terrain)
     {
         this.procedural_terrain = procedural_terrain;
+    }
+
+    public void SetChunkMaterial(Material material)
+    {
+        gameObject.GetComponent<MeshRenderer>().material = material;
     }
 
     public static Vector3Int GetChunkSize()
@@ -108,7 +115,7 @@ public class Chunk : MonoBehaviour
             for (int j = 0; j < 3; j++) // all 3 vertices within a triangle
             {
                 mesh_triangles[i * 3 + j] = i * 3 + j;
-                /* sets it equal to its index. i have no shared verticies
+                /* sets it equal to its index. (i have no shared verticies
                 since unity doesnt have split normals (that i know of)) */
 
                 vertices[i * 3 + j] = triangles[i][j];
@@ -121,18 +128,22 @@ public class Chunk : MonoBehaviour
             Vector3 triangle_position = (Vertex0 + Vertex1 + Vertex2) * (1f / 3f); // average position of all 3 vertices
 
             Vector3 triangle_world_position = transform.TransformPoint(triangle_position);
-            Vector3 triangle_planet_position = transform.parent.InverseTransformPoint(triangle_world_position);
+            Vector3 triangle_planet_position = transform.parent.InverseTransformPoint(triangle_world_position); // position of this triangle in Planet Space
 
             Vector3 normal = Vector3.Cross(Vertex1 - Vertex0, Vertex2 - Vertex0).normalized;
-            float steepness = 1 - Mathf.Clamp01(Vector3.Dot(normal, triangle_planet_position.normalized) * 2 - 1);
+            float gradient = 1 - Mathf.Clamp01(Vector3.Dot(normal, triangle_planet_position.normalized) * 2 - 1); // Gradient of terrain at this position
 
-            float height = Mathf.Clamp01(Utils.Remap(triangle_planet_position.magnitude, procedural_terrain.SeaLevel, procedural_terrain.SurfaceMaxHeight, 0, 1));
+            float elevation = Mathf.Clamp01(Utils.Remap(triangle_planet_position.magnitude, procedural_terrain.SeaLevel, procedural_terrain.SurfaceMaxHeight, 0, 1));
 
-            Color color = procedural_terrain.SurfaceColorMap.GetPixelBilinear(steepness, height);
-            color = new Color(Mathf.Pow(color.r, 2.2f),
+            Color color = new Color(gradient, elevation, 0, 1);
+
+            // sample surface color map using terrain gradient and elevation as UV coordinates
+            //Color color = surface_color_map.GetPixelBilinear(gradient, elevation);
+/*            color = new Color(Mathf.Pow(color.r, 2.2f),
                               Mathf.Pow(color.g, 2.2f),
-                              Mathf.Pow(color.b, 2.2f));
+                              Mathf.Pow(color.b, 2.2f));*/
 
+            // set color of this triangle 
             vertex_colors[i * 3 + 0] = color;
             vertex_colors[i * 3 + 1] = color;
             vertex_colors[i * 3 + 2] = color;
