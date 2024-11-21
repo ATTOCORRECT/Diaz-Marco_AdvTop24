@@ -52,6 +52,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _Color_Depth_Factor: 2
+    - _Color_Levels: 4
     - _Flatness: 1
     - _Foam_Lap_Speed: 0.1
     - _Foam_Range: 0.1
@@ -66,6 +67,6 @@ Material:
     - _Wave_Thickness: 0.75
     m_Colors:
     - _Deep_Color: {r: 1, g: 0.76369417, b: 0, a: 0}
-    - _Foam_Color: {r: 0.93962264, g: 0, b: 0.058827225, a: 1}
+    - _Foam_Color: {r: 0.85490197, g: 0, b: 0.094467364, a: 1}
     - _Shallow_Color: {r: 1, g: 0, b: 0.100595474, a: 0}
   m_BuildTextureStacks: []
