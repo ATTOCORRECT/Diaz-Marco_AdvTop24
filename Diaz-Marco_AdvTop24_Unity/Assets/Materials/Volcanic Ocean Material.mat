@@ -53,6 +53,7 @@ Material:
     m_Floats:
     - _Color_Depth_Factor: 2
     - _Color_Levels: 4
+    - _Emmisive: 1
     - _Flatness: 1
     - _Foam_Lap_Speed: 0.1
     - _Foam_Range: 0.1

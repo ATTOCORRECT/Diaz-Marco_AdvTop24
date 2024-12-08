@@ -73,6 +73,7 @@ Material:
     - _Color_Levels: 32
     - _Cull: 0
     - _DstBlend: 10
+    - _Emmisive: 0
     - _Flatness: 0
     - _Foam_Lap_Speed: 1
     - _Foam_Range: 0.5
@@ -80,7 +81,7 @@ Material:
     - _Fresnel_Power: 0.5
     - _Minimum_Fresnel_Alpha: 0.8
     - _Planet_Maximum_Radius: 64.5
-    - _Planet_Size: 128
+    - _Planet_Size: 64
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
